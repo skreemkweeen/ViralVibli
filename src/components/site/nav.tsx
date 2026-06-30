@@ -50,12 +50,12 @@ export function Nav() {
 
         <div className="flex items-center gap-1.5">
           <Link
-            href="#"
+            href="/sign-in"
             className="hidden h-10 items-center rounded-full px-4 text-[14px] text-muted transition-colors hover:text-ink sm:inline-flex"
           >
             Sign in
           </Link>
-          <Button href="#pricing" className="h-10 px-5 text-[14px]">
+          <Button href="/sign-in" className="h-10 px-5 text-[14px]">
             Start free
           </Button>
         </div>

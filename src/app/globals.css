@@ -16,12 +16,30 @@
   --color-accent: #c8f04e;
   --color-accent-dim: #aad13a;
   --color-accent-ink: #0a0a0b;
+  /* accent used as foreground text/icon; readable per theme */
+  --color-accent-fg: #c8f04e;
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
 
   --radius-card: 18px;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light theme override (app surfaces only; the landing page never opts in).
+   Components reference semantic tokens, so swapping the values here re-themes
+   the whole app shell. */
+.theme-light {
+  color-scheme: light;
+  --color-bg: #fbfbfa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f4f2;
+  --color-line: #e6e6e2;
+  --color-line-soft: #efefec;
+  --color-ink: #18181b;
+  --color-muted: #52525b;
+  --color-faint: #8a8a90;
+  --color-accent-fg: #4f6f10;
 }
 
 @layer base {

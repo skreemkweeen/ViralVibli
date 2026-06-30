@@ -87,7 +87,7 @@ export function Hero() {
             {...enter(0.44)}
           >
             <Magnetic>
-              <Button href="#pricing">Start free</Button>
+              <Button href="/sign-in">Start free</Button>
             </Magnetic>
             <Button href="#studios" variant="ghost">
               See it in motion

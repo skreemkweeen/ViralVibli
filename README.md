@@ -50,9 +50,27 @@ src/
   lib/content.ts      modules, studios, tiers, testimonials, faqs
 ```
 
+## Application shell
+
+The authenticated workspace lives under the `(app)` route group:
+
+- `/dashboard` overview, `/assistant` (the AI Assistant, first live module),
+  `/settings` (tabbed), `/sign-in`, and registry-driven `/m/[id]` module routes.
+- **Auth** is a swappable abstraction (`src/lib/auth`); a demo provider runs with
+  no keys, and Clerk drops in without consumer changes (see `docs/auth.md`).
+- **Module registry** (`src/lib/modules/registry.tsx`) is the single source of
+  truth: sidebar nav, command palette, dashboard grid, and routing all read from
+  it, so a new studio registers in one place.
+- **Theme system** (light / dark / system) themes the app via semantic tokens;
+  the marketing site stays dark-locked.
+- **Command palette** (⌘K) for global search, navigation, and actions;
+  notifications and a user menu round out the shell.
+- **AI client seam** (`src/lib/ai/client.ts`) streams brand-aware replies via a
+  mock today; swap in the Claude API behind the same async-iterator contract.
+
 ## Roadmap
 
-Phase 1 ships the landing page and design system. Subsequent phases build the
-13 product modules (AI Assistant, Story/Caption/Carousel/Vision/UGC studios,
-Prompt Vault, Trend Lab, Brand Studio, Calendar, Analytics, Monetization Hub,
-Community) on top of this foundation, plus auth, data, and billing.
+The remaining studios (Story, Caption, Carousel, Vision, UGC, Prompt Vault,
+Brand, Trend Lab, Calendar, Analytics, Monetization Hub, Community) are
+registered and routed; each plugs into the shell and shares the AI Assistant's
+brand memory as it is built out, plus real data and billing.

@@ -28,7 +28,7 @@ export function Cta() {
         <Reveal delay={0.22}>
           <div className="mt-10 flex justify-center">
             <Magnetic strength={0.5}>
-              <Button href="#pricing" className="h-14 px-9 text-[16px]">
+              <Button href="/sign-in" className="h-14 px-9 text-[16px]">
                 Start free
               </Button>
             </Magnetic>

@@ -34,7 +34,7 @@ export function StickyCta() {
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
         >
-          <Button href="#pricing" className="w-full">
+          <Button href="/sign-in" className="w-full">
             Start free
           </Button>
         </motion.div>

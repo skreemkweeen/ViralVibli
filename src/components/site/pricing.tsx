@@ -48,7 +48,7 @@ export function Pricing() {
                 </p>
 
                 <Button
-                  href="#"
+                  href="/sign-in"
                   variant={t.featured ? "primary" : "ghost"}
                   className="mt-6 w-full"
                 >
