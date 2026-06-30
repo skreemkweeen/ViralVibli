@@ -11,6 +11,13 @@ import {
   apertures,
   aspects,
   categories,
+  moods,
+  materials,
+  textures,
+  timesOfDay,
+  weathers,
+  renderStyles,
+  qualities,
   optionLabel,
 } from "@/lib/vision/data";
 import { ControlSection } from "./control-section";
@@ -52,6 +59,19 @@ export function ControlPanel() {
             options={styles}
             value={direction.style}
             onChange={(v) => setField("style", v)}
+            size="sm"
+          />
+        </ControlSection>
+
+        {/* Mood */}
+        <ControlSection
+          title="Mood"
+          summary={optionLabel(moods, direction.mood)}
+        >
+          <ChipGroup
+            options={moods}
+            value={direction.mood}
+            onChange={(v) => setField("mood", v)}
             size="sm"
           />
         </ControlSection>
@@ -105,6 +125,7 @@ export function ControlPanel() {
         {/* Composition */}
         <ControlSection
           title="Composition"
+          defaultOpen={false}
           summary={optionLabel(compositions, direction.composition)}
         >
           <ChipGroup
@@ -113,6 +134,64 @@ export function ControlPanel() {
             onChange={(v) => setField("composition", v)}
             size="sm"
           />
+        </ControlSection>
+
+        {/* Materials & texture */}
+        <ControlSection
+          title="Materials and texture"
+          defaultOpen={false}
+          summary={
+            optionLabel(materials, direction.material) ??
+            optionLabel(textures, direction.texture)
+          }
+        >
+          <div className="space-y-3">
+            <Field label="Material">
+              <ChipGroup
+                options={materials}
+                value={direction.material}
+                onChange={(v) => setField("material", v)}
+                size="sm"
+              />
+            </Field>
+            <Field label="Texture">
+              <ChipGroup
+                options={textures}
+                value={direction.texture}
+                onChange={(v) => setField("texture", v)}
+                size="sm"
+              />
+            </Field>
+          </div>
+        </ControlSection>
+
+        {/* Time & weather */}
+        <ControlSection
+          title="Time and weather"
+          defaultOpen={false}
+          summary={
+            optionLabel(timesOfDay, direction.timeOfDay) ??
+            optionLabel(weathers, direction.weather)
+          }
+        >
+          <div className="space-y-3">
+            <Field label="Time of day">
+              <ChipGroup
+                options={timesOfDay}
+                value={direction.timeOfDay}
+                onChange={(v) => setField("timeOfDay", v)}
+                size="sm"
+              />
+            </Field>
+            <Field label="Weather">
+              <ChipGroup
+                options={weathers}
+                value={direction.weather}
+                onChange={(v) => setField("weather", v)}
+                size="sm"
+              />
+            </Field>
+          </div>
         </ControlSection>
 
         {/* Environment */}
@@ -128,12 +207,27 @@ export function ControlPanel() {
         {/* Color grade */}
         <ControlSection
           title="Color grade"
+          defaultOpen={false}
           summary={optionLabel(colorGrades, direction.colorGrade)}
         >
           <ChipGroup
             options={colorGrades}
             value={direction.colorGrade}
             onChange={(v) => setField("colorGrade", v)}
+            size="sm"
+          />
+        </ControlSection>
+
+        {/* Rendering style */}
+        <ControlSection
+          title="Rendering"
+          defaultOpen={false}
+          summary={optionLabel(renderStyles, direction.render)}
+        >
+          <ChipGroup
+            options={renderStyles}
+            value={direction.render}
+            onChange={(v) => setField("render", v)}
             size="sm"
           />
         </ControlSection>
@@ -169,6 +263,21 @@ export function ControlPanel() {
               );
             })}
           </div>
+        </ControlSection>
+
+        {/* Output quality */}
+        <ControlSection
+          title="Output quality"
+          defaultOpen={false}
+          summary={optionLabel(qualities, direction.quality)}
+        >
+          <ChipGroup
+            options={qualities}
+            value={direction.quality}
+            onChange={(v) => v && setField("quality", v)}
+            clearable={false}
+            size="sm"
+          />
         </ControlSection>
       </div>
     </div>

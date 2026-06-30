@@ -8,6 +8,13 @@ import {
   apertures,
   aspects,
   categories,
+  moods,
+  materials,
+  textures,
+  timesOfDay,
+  weathers,
+  renderStyles,
+  qualities,
   optionLabel,
 } from "./data";
 
@@ -17,12 +24,19 @@ export type Direction = {
   subject: string;
   environment: string;
   style: string | null;
+  mood: string | null;
   lighting: string | null;
   composition: string | null;
   colorGrade: string | null;
   camera: string | null;
   lens: string | null;
   aperture: string | null;
+  material: string | null;
+  texture: string | null;
+  timeOfDay: string | null;
+  weather: string | null;
+  render: string | null;
+  quality: string;
   aspect: string;
 };
 
@@ -31,12 +45,19 @@ export const emptyDirection: Direction = {
   subject: "",
   environment: "",
   style: "editorial",
+  mood: "refined",
   lighting: "window",
   composition: "negative",
   colorGrade: "neutral",
   camera: "hasselblad",
   lens: "50",
   aperture: "2.8",
+  material: null,
+  texture: null,
+  timeOfDay: null,
+  weather: null,
+  render: "photographic",
+  quality: "high",
   aspect: "4-5",
 };
 
@@ -46,20 +67,26 @@ export function assemblePrompt(d: Direction): string {
   const subject = d.subject.trim() || cat?.hint || "the subject";
 
   const parts: string[] = [];
-  parts.push(
-    `${capitalize(subject)}. ${cat?.label ?? "Editorial"} photography`,
-  );
 
+  // subject, material, category
+  const mat = optionLabel(materials, d.material);
+  const subjectClause = mat
+    ? `${capitalize(subject)} in ${mat.toLowerCase()}`
+    : capitalize(subject);
+  parts.push(`${subjectClause}. ${cat?.label ?? "Editorial"} photography`);
+
+  // style, mood, composition
   const style = optionLabel(styles, d.style);
+  const mood = optionLabel(moods, d.mood);
   const comp = optionLabel(compositions, d.composition);
-  if (style || comp) {
-    parts.push(
-      [style && `${style.toLowerCase()} style`, comp && comp.toLowerCase()]
-        .filter(Boolean)
-        .join(", "),
-    );
-  }
+  const tone = [
+    style && `${style.toLowerCase()} style`,
+    mood && `${mood.toLowerCase()} mood`,
+    comp && comp.toLowerCase(),
+  ].filter(Boolean);
+  if (tone.length) parts.push(tone.join(", "));
 
+  // gear
   const cam = optionLabel(cameras, d.camera);
   const lens = optionLabel(lenses, d.lens);
   const ap = optionLabel(apertures, d.aperture);
@@ -74,18 +101,39 @@ export function assemblePrompt(d: Direction): string {
     parts.push(gear);
   }
 
+  // light, time, weather
   const light = optionLabel(lighting, d.lighting);
-  if (light) parts.push(`${light.toLowerCase()} lighting`);
+  const time = optionLabel(timesOfDay, d.timeOfDay);
+  const weather = optionLabel(weathers, d.weather);
+  const env = [
+    light && `${light.toLowerCase()} lighting`,
+    time && time.toLowerCase(),
+    weather && weather.toLowerCase(),
+  ].filter(Boolean);
+  if (env.length) parts.push(env.join(", "));
 
   if (d.environment.trim()) parts.push(d.environment.trim());
 
+  // surface, grade
+  const texture = optionLabel(textures, d.texture);
   const grade = optionLabel(colorGrades, d.colorGrade);
-  if (grade) parts.push(`${grade.toLowerCase()} color grade`);
+  const finish = [
+    texture && `${texture.toLowerCase()} finish`,
+    grade && `${grade.toLowerCase()} color grade`,
+  ].filter(Boolean);
+  if (finish.length) parts.push(finish.join(", "));
+
+  // render + aspect + quality
+  const render = optionLabel(renderStyles, d.render);
+  if (render) parts.push(`${render.toLowerCase()} rendering`);
 
   const aspect = aspects.find((a) => a.id === d.aspect);
   if (aspect) parts.push(`${aspect.label} aspect ratio`);
 
-  parts.push("art-directed, high detail, professional");
+  const quality = optionLabel(qualities, d.quality);
+  parts.push(
+    `art-directed, ${quality ? `${quality.toLowerCase()} detail` : "high detail"}, professional`,
+  );
 
   return parts.join(". ").replace(/\.\./g, ".") + ".";
 }

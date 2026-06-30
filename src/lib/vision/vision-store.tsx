@@ -31,12 +31,23 @@ export type HistoryEntry = {
 
 export type Collection = { id: string; name: string };
 
+export type SavedPrompt = {
+  id: string;
+  prompt: string;
+  direction: Direction;
+  tags: string[];
+  createdAt: number;
+};
+
 type VisionState = {
   direction: Direction;
   setField: <K extends keyof Direction>(key: K, value: Direction[K]) => void;
+  setDirection: (d: Direction) => void;
+  applyPreset: (values: Partial<Direction>) => void;
   resetDirection: () => void;
   prompt: string;
 
+  generating: boolean;
   concepts: Concept[];
   generate: () => void;
   toggleFavorite: (id: string) => void;
@@ -49,12 +60,19 @@ type VisionState = {
 
   collections: Collection[];
   createCollection: (name: string) => string;
+
+  saved: SavedPrompt[];
+  savePrompt: (tags: string[]) => void;
+  removeSaved: (id: string) => void;
+  restoreSaved: (entry: SavedPrompt) => void;
+  allTags: string[];
 };
 
 const KEY = {
   concepts: "vv-vision-concepts",
   history: "vv-vision-history",
   collections: "vv-vision-collections",
+  saved: "vv-vision-saved",
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -74,9 +92,11 @@ function load<T>(key: string, fallback: T): T {
 
 export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [direction, setDirection] = useState<Direction>(emptyDirection);
+  const [generating, setGenerating] = useState(false);
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [saved, setSaved] = useState<SavedPrompt[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // hydrate once
@@ -89,6 +109,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
         { id: "c-moods", name: "Moodboard" },
       ]),
     );
+    setSaved(load<SavedPrompt[]>(KEY.saved, []));
     setHydrated(true);
   }, []);
 
@@ -103,6 +124,9 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     if (hydrated)
       localStorage.setItem(KEY.collections, JSON.stringify(collections));
   }, [collections, hydrated]);
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(KEY.saved, JSON.stringify(saved));
+  }, [saved, hydrated]);
 
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
 
@@ -112,31 +136,72 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const applyPreset = useCallback(
+    (values: Partial<Direction>) =>
+      setDirection((d) => ({ ...d, ...values })),
+    [],
+  );
+
   const resetDirection = useCallback(() => setDirection(emptyDirection), []);
 
   const generate = useCallback(() => {
-    const made: Concept[] = Array.from({ length: 3 }).map((_, i) => {
-      const id = uid("concept");
-      return {
-        id,
-        prompt,
-        categoryId: direction.category,
-        aspectId: direction.aspect,
-        styleId: direction.style,
-        seed: `${id}-${i}`,
-        createdAt: Date.now(),
-        favorite: false,
-        collectionId: null,
-      };
-    });
-    setConcepts((c) => [...made, ...c]);
-    setHistory((h) =>
-      [
-        { id: uid("h"), prompt, direction, createdAt: Date.now() },
-        ...h,
-      ].slice(0, 50),
-    );
+    setGenerating(true);
+    // brief, intentional latency so the gallery reads as a real render pass
+    window.setTimeout(() => {
+      const made: Concept[] = Array.from({ length: 3 }).map((_, i) => {
+        const id = uid("concept");
+        return {
+          id,
+          prompt,
+          categoryId: direction.category,
+          aspectId: direction.aspect,
+          styleId: direction.style,
+          seed: `${id}-${i}`,
+          createdAt: Date.now(),
+          favorite: false,
+          collectionId: null,
+        };
+      });
+      setConcepts((c) => [...made, ...c]);
+      setHistory((h) =>
+        [
+          { id: uid("h"), prompt, direction, createdAt: Date.now() },
+          ...h,
+        ].slice(0, 50),
+      );
+      setGenerating(false);
+    }, 700);
   }, [prompt, direction]);
+
+  const savePrompt = useCallback(
+    (tags: string[]) =>
+      setSaved((s) => [
+        {
+          id: uid("saved"),
+          prompt,
+          direction,
+          tags,
+          createdAt: Date.now(),
+        },
+        ...s,
+      ]),
+    [prompt, direction],
+  );
+
+  const removeSaved = useCallback(
+    (id: string) => setSaved((s) => s.filter((x) => x.id !== id)),
+    [],
+  );
+
+  const restoreSaved = useCallback(
+    (entry: SavedPrompt) => setDirection(entry.direction),
+    [],
+  );
+
+  const allTags = useMemo(
+    () => Array.from(new Set(saved.flatMap((s) => s.tags))).sort(),
+    [saved],
+  );
 
   const toggleFavorite = useCallback(
     (id: string) =>
@@ -175,8 +240,11 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     () => ({
       direction,
       setField,
+      setDirection,
+      applyPreset,
       resetDirection,
       prompt,
+      generating,
       concepts,
       generate,
       toggleFavorite,
@@ -187,12 +255,19 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       clearHistory,
       collections,
       createCollection,
+      saved,
+      savePrompt,
+      removeSaved,
+      restoreSaved,
+      allTags,
     }),
     [
       direction,
       setField,
+      applyPreset,
       resetDirection,
       prompt,
+      generating,
       concepts,
       generate,
       toggleFavorite,
@@ -203,6 +278,11 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       clearHistory,
       collections,
       createCollection,
+      saved,
+      savePrompt,
+      removeSaved,
+      restoreSaved,
+      allTags,
     ],
   );
 

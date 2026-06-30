@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { SquaresFour } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
 import { ControlPanel } from "./control-panel";
 import { Canvas } from "./canvas";
+import { PresetGallery } from "./preset-gallery";
 
 export function VisionStudio() {
+  const [presetsOpen, setPresetsOpen] = useState(false);
+
   return (
     <VisionProvider>
       <div className="flex flex-col lg:h-[calc(100dvh-8rem)]">
@@ -21,6 +26,13 @@ export function VisionStudio() {
                 concepts.
               </p>
             </div>
+            <button
+              onClick={() => setPresetsOpen(true)}
+              className="hidden shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint sm:inline-flex"
+            >
+              <SquaresFour className="size-4 text-accent-fg" />
+              Browse presets
+            </button>
           </div>
           <div className="mt-5">
             <CategoryBar />
@@ -33,10 +45,12 @@ export function VisionStudio() {
             <ControlPanel />
           </div>
           <div className="overflow-hidden rounded-2xl border border-line bg-surface lg:h-full">
-            <Canvas />
+            <Canvas onBrowsePresets={() => setPresetsOpen(true)} />
           </div>
         </div>
       </div>
+
+      <PresetGallery open={presetsOpen} onClose={() => setPresetsOpen(false)} />
     </VisionProvider>
   );
 }

@@ -68,6 +68,72 @@ export const compositions: Option[] = [
   { id: "frame", label: "Frame in frame" },
 ];
 
+export const moods: Option[] = [
+  { id: "serene", label: "Serene", detail: "calm, quiet" },
+  { id: "bold", label: "Bold", detail: "confident, graphic" },
+  { id: "intimate", label: "Intimate", detail: "close, warm" },
+  { id: "energetic", label: "Energetic", detail: "lively, kinetic" },
+  { id: "nostalgic", label: "Nostalgic", detail: "wistful, faded" },
+  { id: "mysterious", label: "Mysterious", detail: "shadowed, moody" },
+  { id: "playful", label: "Playful", detail: "bright, fun" },
+  { id: "refined", label: "Refined", detail: "elegant, precise" },
+];
+
+export const materials: Option[] = [
+  { id: "ceramic", label: "Ceramic" },
+  { id: "glass", label: "Glass" },
+  { id: "metal", label: "Brushed metal" },
+  { id: "marble", label: "Marble" },
+  { id: "linen", label: "Linen" },
+  { id: "leather", label: "Leather" },
+  { id: "wood", label: "Wood" },
+  { id: "concrete", label: "Concrete" },
+  { id: "velvet", label: "Velvet" },
+  { id: "paper", label: "Paper" },
+];
+
+export const textures: Option[] = [
+  { id: "matte", label: "Matte" },
+  { id: "glossy", label: "Glossy" },
+  { id: "soft-focus", label: "Soft focus" },
+  { id: "crisp", label: "Crisp detail" },
+  { id: "grain", label: "Film grain" },
+  { id: "smooth", label: "Smooth" },
+];
+
+export const timesOfDay: Option[] = [
+  { id: "dawn", label: "Dawn" },
+  { id: "morning", label: "Morning" },
+  { id: "midday", label: "Midday" },
+  { id: "golden", label: "Golden hour" },
+  { id: "blue", label: "Blue hour" },
+  { id: "night", label: "Night" },
+];
+
+export const weathers: Option[] = [
+  { id: "clear", label: "Clear" },
+  { id: "overcast", label: "Overcast" },
+  { id: "fog", label: "Soft fog" },
+  { id: "rain", label: "Light rain" },
+  { id: "snow", label: "Fresh snow" },
+  { id: "harsh", label: "Harsh sun" },
+];
+
+export const renderStyles: Option[] = [
+  { id: "photographic", label: "Photographic" },
+  { id: "cinematic-film", label: "Cinematic film" },
+  { id: "editorial-print", label: "Editorial print" },
+  { id: "hyperreal", label: "Hyperreal" },
+  { id: "analog", label: "Analog 35mm" },
+  { id: "studio-render", label: "Studio render" },
+];
+
+export const qualities: Option[] = [
+  { id: "standard", label: "Standard", detail: "clean" },
+  { id: "high", label: "High", detail: "fine detail" },
+  { id: "ultra", label: "Ultra", detail: "maximum detail" },
+];
+
 export const colorGrades: Option[] = [
   { id: "warm-film", label: "Warm film" },
   { id: "cool-editorial", label: "Cool editorial" },
