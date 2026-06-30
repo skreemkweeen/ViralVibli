@@ -71,8 +71,10 @@ export type Job = {
   status: JobStatus;
   /** 0..1 */
   progress: number;
-  request: ImageRequest;
-  result?: ImageResult;
+  /** Provider-specific request; callers cast to their known type. */
+  request: unknown;
+  /** Provider-specific result; callers cast to their known type. */
+  result?: unknown;
   error?: string;
   attempts: number;
   provider: string;
@@ -88,6 +90,43 @@ export interface TextProvider {
 export interface ImageProvider {
   readonly id: string;
   generate(req: ImageRequest, signal?: AbortSignal): Promise<ImageResult>;
+}
+
+// ─── Story types ──────────────────────────────────────────────────────────────
+
+export type StorySlide = {
+  slide: number;
+  copy: string;
+  visualSuggestion: string;
+  stickerRecommendation?: string;
+  cta?: string;
+  speakerNotes?: string;
+};
+
+export type StoryRequest = {
+  brief: string;
+  /** The creator's raw topic/subject, used for display in local-provider templates. */
+  subject?: string;
+  framework: string;
+  platform: string;
+  count: number;
+  voice?: string;
+  tone?: string;
+  hookStrength?: string;
+  visualDirection?: string;
+  ctaStyle?: string;
+  audience?: string;
+  goal?: string;
+};
+
+export type StoryResult = {
+  slides: StorySlide[];
+  provider: string;
+};
+
+export interface StoryProvider {
+  readonly id: string;
+  generate(req: StoryRequest, signal?: AbortSignal): Promise<StoryResult>;
 }
 
 /** Provider failure that should surface to retry logic. */

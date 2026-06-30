@@ -1,11 +1,13 @@
 /**
- * In-process job store for image generation jobs.
+ * In-process job store for generation jobs.
  * Survives for the lifetime of the Node server process.
  * Replace the Map with Redis/Upstash for multi-instance deployments.
+ *
+ * createJob is internal; callers use createImageJob / createStoryJob.
  */
 
-import type { Job, ImageRequest, ImageResult } from "./types";
-import { getPrimaryImageProvider } from "./registry";
+import type { Job, ImageRequest, StoryRequest } from "./types";
+import { getPrimaryImageProvider, getPrimaryStoryProvider } from "./registry";
 import { ProviderError } from "./types";
 
 const jobs = new Map<string, Job>();
@@ -18,6 +20,8 @@ function newId() {
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_MS = [1000, 3000, 8000];
+
+type JobRunner = (request: unknown, signal: AbortSignal) => Promise<unknown>;
 
 function patch(id: string, updates: Partial<Job>) {
   const job = jobs.get(id);
@@ -41,7 +45,7 @@ export function cancelJob(id: string): boolean {
   return true;
 }
 
-async function runAttempt(id: string, attempt: number): Promise<void> {
+async function runAttempt(id: string, attempt: number, runner: JobRunner): Promise<void> {
   const job = jobs.get(id);
   if (!job || job.status === "cancelled") return;
 
@@ -55,11 +59,8 @@ async function runAttempt(id: string, attempt: number): Promise<void> {
   controllers.set(id, controller);
 
   try {
-    const provider = getPrimaryImageProvider();
-    patch(id, { provider: provider.id, progress: 0.2 });
-
-    const result: ImageResult = await provider.generate(job.request, controller.signal);
-
+    patch(id, { progress: 0.2 });
+    const result = await runner(job.request, controller.signal);
     patch(id, { status: "succeeded", progress: 1, result });
   } catch (err) {
     const retryable = err instanceof ProviderError ? err.retryable : true;
@@ -75,15 +76,14 @@ async function runAttempt(id: string, attempt: number): Promise<void> {
 
     const delay = RETRY_DELAY_MS[attempt - 1] ?? 8000;
     await new Promise((r) => setTimeout(r, delay));
-    await runAttempt(id, attempt + 1);
+    await runAttempt(id, attempt + 1, runner);
   } finally {
     controllers.delete(id);
   }
 }
 
-export function createJob(request: ImageRequest): Job {
+function createJob(request: unknown, runner: JobRunner, providerHint = "unknown"): Job {
   const id = newId();
-  const provider = getPrimaryImageProvider().id;
   const now = Date.now();
   const job: Job = {
     id,
@@ -91,14 +91,31 @@ export function createJob(request: ImageRequest): Job {
     progress: 0,
     request,
     attempts: 0,
-    provider,
+    provider: providerHint,
     createdAt: now,
     updatedAt: now,
   };
   jobs.set(id, job);
-  // Fire-and-forget; status is polled by the client
-  void runAttempt(id, 1);
+  void runAttempt(id, 1, runner);
   return job;
+}
+
+export function createImageJob(request: ImageRequest): Job {
+  const provider = getPrimaryImageProvider();
+  return createJob(
+    request,
+    (req, signal) => provider.generate(req as ImageRequest, signal),
+    provider.id,
+  );
+}
+
+export function createStoryJob(request: StoryRequest): Job {
+  const provider = getPrimaryStoryProvider();
+  return createJob(
+    request,
+    (req, signal) => provider.generate(req as StoryRequest, signal),
+    provider.id,
+  );
 }
 
 // Prune jobs older than 2 hours to prevent memory leak

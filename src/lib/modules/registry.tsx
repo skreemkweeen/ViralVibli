@@ -46,9 +46,9 @@ export const appModules: AppModule[] = [
   {
     id: "story",
     name: "Story Studio",
-    href: "/m/story",
+    href: "/story",
     icon: FilmSlate,
-    status: "soon",
+    status: "live",
     group: "create",
     blurb: "Psychology-backed stories, sequences, and replies.",
   },

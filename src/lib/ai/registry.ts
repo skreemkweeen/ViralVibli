@@ -4,9 +4,11 @@
  * The UI never touches this file.
  */
 
-import type { TextProvider, ImageProvider } from "./types";
+import type { TextProvider, ImageProvider, StoryProvider } from "./types";
 import { localTextProvider, localImageProvider } from "./providers/local";
+import { localStoryProvider } from "./providers/local/story";
 import { makeAnthropicTextProvider } from "./providers/anthropic";
+import { makeAnthropicStoryProvider } from "./providers/anthropic/story";
 import { makeOpenAITextProvider, makeOpenAIImageProvider } from "./providers/openai";
 import { makeFalImageProvider } from "./providers/fal";
 import { makeReplicateImageProvider } from "./providers/replicate";
@@ -60,9 +62,28 @@ function buildImageProviders(): ImageProvider[] {
   return providers;
 }
 
+// ─── Story providers ──────────────────────────────────────────────────────────
+
+function buildStoryProviders(): StoryProvider[] {
+  const providers: StoryProvider[] = [];
+  const anthropicKey = env("ANTHROPIC_API_KEY");
+  const preferred = env("STORY_PROVIDER");
+
+  if (anthropicKey) providers.push(makeAnthropicStoryProvider(anthropicKey));
+  providers.push(localStoryProvider);
+
+  if (preferred) {
+    const found = providers.find((p) => p.id === preferred);
+    if (found) return [found, ...providers.filter((p) => p.id !== preferred)];
+  }
+
+  return providers;
+}
+
 // Memoize for the lifetime of the server process (not per-request)
 let _textProviders: TextProvider[] | null = null;
 let _imageProviders: ImageProvider[] | null = null;
+let _storyProviders: StoryProvider[] | null = null;
 
 export function getTextProviders(): TextProvider[] {
   return (_textProviders ??= buildTextProviders());
@@ -78,4 +99,12 @@ export function getPrimaryTextProvider(): TextProvider {
 
 export function getPrimaryImageProvider(): ImageProvider {
   return getImageProviders()[0]!;
+}
+
+export function getStoryProviders(): StoryProvider[] {
+  return (_storyProviders ??= buildStoryProviders());
+}
+
+export function getPrimaryStoryProvider(): StoryProvider {
+  return getStoryProviders()[0]!;
 }

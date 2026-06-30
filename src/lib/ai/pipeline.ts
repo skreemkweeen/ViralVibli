@@ -1,4 +1,4 @@
-import type { EnhanceGoal, EnhanceResult, ImageRequest, Job } from "./types";
+import type { EnhanceGoal, EnhanceResult } from "./types";
 
 // ── Enhance ───────────────────────────────────────────────────────────────────
 
@@ -27,30 +27,44 @@ export async function enhanceViaAPI(
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
 
+/** Minimal job shape returned from poll/create calls. Callers cast result as needed. */
+export type JobPollResult = {
+  id: string;
+  status: string;
+  progress?: number;
+  result?: unknown;
+  error?: string;
+};
+
 export async function createJobViaAPI(
-  request: ImageRequest,
+  body: Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<Job> {
-  const res = await fetch("/api/vision/generate", {
+  endpoint = "/api/vision/generate",
+): Promise<JobPollResult> {
+  const res = await fetch(endpoint, {
     method: "POST",
     signal,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json() as Promise<Job>;
+  return res.json() as Promise<JobPollResult>;
 }
 
 export async function pollJobViaAPI(
   jobId: string,
   signal?: AbortSignal,
-): Promise<Job> {
-  const res = await fetch(`/api/vision/jobs/${jobId}`, { signal });
+  jobsBase = "/api/jobs",
+): Promise<JobPollResult> {
+  const res = await fetch(`${jobsBase}/${jobId}`, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json() as Promise<Job>;
+  return res.json() as Promise<JobPollResult>;
 }
 
-export async function cancelJobViaAPI(jobId: string): Promise<void> {
-  await fetch(`/api/vision/jobs/${jobId}`, { method: "DELETE" });
+export async function cancelJobViaAPI(
+  jobId: string,
+  jobsBase = "/api/jobs",
+): Promise<void> {
+  await fetch(`${jobsBase}/${jobId}`, { method: "DELETE" });
 }

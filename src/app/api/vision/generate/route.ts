@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ImageRequest } from "@/lib/ai/types";
-import { createJob } from "@/lib/ai/jobs";
+import { createImageJob } from "@/lib/ai/jobs";
 
 export async function POST(req: NextRequest) {
   let body: Partial<ImageRequest>;
@@ -23,6 +23,6 @@ export async function POST(req: NextRequest) {
     quality: typeof body.quality === "string" ? body.quality : "high",
   };
 
-  const job = createJob(request);
+  const job = createImageJob(request);
   return NextResponse.json(job, { status: 202 });
 }

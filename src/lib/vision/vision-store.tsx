@@ -12,6 +12,7 @@ import {
 import { assemblePrompt, emptyDirection, type Direction } from "./prompt";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
+import { allEnhanceGoals } from "@/lib/ai/types";
 
 // ─── Domain types ─────────────────────────────────────────────────────────────
 
@@ -237,11 +238,14 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
     runGenerate({
-      prompt,
-      subject: direction.subject || "",
-      aspect: direction.aspect,
-      count: 3,
-      quality: direction.quality,
+      basePrompt: prompt,
+      enhance: { prompt, subject: direction.subject || "", goals: allEnhanceGoals },
+      body: {
+        prompt,
+        aspect: direction.aspect.replace("-", ":"),
+        count: 3,
+        quality: direction.quality,
+      },
     });
   }, [runGenerate, prompt, direction]);
 
