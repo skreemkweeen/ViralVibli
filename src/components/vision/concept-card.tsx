@@ -9,17 +9,31 @@ import {
   BookmarkSimple,
   Trash,
   Plus,
+  CopySimple,
+  DownloadSimple,
+  PencilSimple,
+  X,
 } from "@phosphor-icons/react";
 import { useVision, type Concept } from "@/lib/vision/vision-store";
 import { conceptGradient } from "@/lib/vision/prompt";
 import { categories, aspects, styles, optionLabel } from "@/lib/vision/data";
 
 export function ConceptCard({ concept }: { concept: Concept }) {
-  const { toggleFavorite, removeConcept, assignCollection, collections, createCollection } =
-    useVision();
+  const {
+    toggleFavorite,
+    removeConcept,
+    assignCollection,
+    collections,
+    createCollection,
+    duplicateConcept,
+    renameConcept,
+  } = useVision();
   const [copied, setCopied] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(concept.label ?? "");
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const renameRef = useRef<HTMLInputElement>(null);
   const reduce = useReducedMotion();
 
   const cat = categories.find((c) => c.id === concept.categoryId);
@@ -27,24 +41,51 @@ export function ConceptCard({ concept }: { concept: Concept }) {
   const styleLabel = optionLabel(styles, concept.styleId);
   const collection = collections.find((c) => c.id === concept.collectionId);
 
+  const displayPrompt = concept.enhancedPrompt ?? concept.prompt;
+
   useEffect(() => {
     if (!pickerOpen) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node))
         setPickerOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, [pickerOpen]);
 
+  useEffect(() => {
+    if (renaming) renameRef.current?.focus();
+  }, [renaming]);
+
   async function copy() {
     try {
-      await navigator.clipboard.writeText(concept.prompt);
+      await navigator.clipboard.writeText(displayPrompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
       /* clipboard unavailable */
     }
+  }
+
+  function exportAsset() {
+    if (concept.imageUrl) {
+      // Open real image in new tab for download
+      window.open(concept.imageUrl, "_blank", "noopener,noreferrer");
+    } else {
+      // Export prompt as text
+      const blob = new Blob([displayPrompt], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `concept-${concept.seed.slice(-6)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function commitRename() {
+    renameConcept(concept.id, renameValue);
+    setRenaming(false);
   }
 
   return (
@@ -54,6 +95,7 @@ export function ConceptCard({ concept }: { concept: Concept }) {
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="group overflow-hidden rounded-2xl border border-line bg-surface"
     >
+      {/* ── Visual area ─────────────────────────────────────────────── */}
       <div
         className="relative w-full overflow-hidden"
         style={{
@@ -61,25 +103,48 @@ export function ConceptCard({ concept }: { concept: Concept }) {
           background: conceptGradient(concept.seed),
         }}
       >
-        {/* subtle accent bloom */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full opacity-20 blur-2xl"
-          style={{ background: "var(--color-accent)" }}
-        />
-        {/* category label, centered */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/45">
-            {cat?.label}
-          </span>
-        </div>
-        {/* aspect badge */}
+        {/* Real image when available */}
+        {concept.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={concept.imageUrl}
+            alt={concept.label ?? displayPrompt}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+
+        {/* Accent bloom (placeholder-only) */}
+        {!concept.imageUrl && (
+          <>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full opacity-20 blur-2xl"
+              style={{ background: "var(--color-accent)" }}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink/45">
+                {cat?.label}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Aspect badge */}
         <span className="absolute bottom-2.5 left-2.5 rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[10px] text-ink/70 backdrop-blur-sm">
           {aspect?.label}
         </span>
 
-        {/* actions: always visible on touch, hover-revealed on desktop */}
-        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+        {/* Provider badge */}
+        {concept.provider !== "local-image" && (
+          <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[10px] text-ink/50 backdrop-blur-sm">
+            {concept.provider}
+          </span>
+        )}
+
+        {/* Actions overlay */}
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-1 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
           <IconBtn
             label={concept.favorite ? "Unfavorite" : "Favorite"}
             onClick={() => toggleFavorite(concept.id)}
@@ -90,7 +155,13 @@ export function ConceptCard({ concept }: { concept: Concept }) {
           <IconBtn label="Copy prompt" onClick={copy}>
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           </IconBtn>
-          <div ref={ref} className="relative">
+          <IconBtn label="Duplicate" onClick={() => duplicateConcept(concept.id)}>
+            <CopySimple className="size-4" />
+          </IconBtn>
+          <IconBtn label={concept.imageUrl ? "Open image" : "Export prompt"} onClick={exportAsset}>
+            <DownloadSimple className="size-4" />
+          </IconBtn>
+          <div ref={pickerRef} className="relative">
             <IconBtn
               label="Save to collection"
               onClick={() => setPickerOpen((v) => !v)}
@@ -138,18 +209,62 @@ export function ConceptCard({ concept }: { concept: Concept }) {
               </div>
             )}
           </div>
-          <IconBtn label="Remove" onClick={() => removeConcept(concept.id)}>
+          <IconBtn label="Delete" onClick={() => removeConcept(concept.id)}>
             <Trash className="size-4" />
           </IconBtn>
         </div>
       </div>
 
+      {/* ── Caption ──────────────────────────────────────────────────── */}
       <figcaption className="p-3.5">
-        <p className="line-clamp-2 text-[12.5px] leading-snug text-muted">
-          {concept.prompt}
-        </p>
-        <div className="mt-2 flex items-center gap-2 text-[11px] text-faint">
+        {renaming ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={renameRef}
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitRename();
+                if (e.key === "Escape") setRenaming(false);
+              }}
+              onBlur={commitRename}
+              placeholder="Name this concept"
+              className="h-7 min-w-0 flex-1 rounded-md border border-line bg-bg px-2 text-[12.5px] text-ink placeholder:text-faint focus:border-faint focus:outline-none"
+            />
+            <button
+              onClick={() => setRenaming(false)}
+              aria-label="Cancel rename"
+              className="text-faint hover:text-muted"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-1.5">
+            <p className="line-clamp-2 flex-1 text-[12.5px] leading-snug text-muted">
+              {concept.label ?? displayPrompt}
+            </p>
+            <button
+              onClick={() => {
+                setRenameValue(concept.label ?? "");
+                setRenaming(true);
+              }}
+              aria-label="Rename concept"
+              className="mt-0.5 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <PencilSimple className="size-3" />
+            </button>
+          </div>
+        )}
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-faint">
           {styleLabel && <span>{styleLabel}</span>}
+          {concept.enhancedPrompt && (
+            <>
+              {styleLabel && <span aria-hidden="true">&middot;</span>}
+              <span className="text-accent-fg/70">AI enhanced</span>
+            </>
+          )}
           {collection && (
             <>
               <span aria-hidden="true">&middot;</span>

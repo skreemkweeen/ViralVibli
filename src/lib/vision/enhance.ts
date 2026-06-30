@@ -1,19 +1,28 @@
-/**
- * Prompt enhancement. Elaborates a composed brief with richer descriptive
- * language a stock photographer or model would respond to. Mock today, behind
- * the same async contract as the AI client, so a real model drops in later.
- */
-const flourishes = [
-  "Emphasize tactile detail and believable material response to light.",
-  "Keep the composition uncluttered, with intentional negative space.",
-  "Render true-to-life color with a gentle, filmic falloff in the shadows.",
-  "Add subtle depth with a soft foreground and a quiet, unbusy background.",
-  "Favor a single confident focal point over competing elements.",
-];
+import type { EnhanceGoal } from "@/lib/ai/types";
+import { allEnhanceGoals } from "@/lib/ai/types";
 
-export async function enhancePrompt(prompt: string): Promise<string> {
-  await new Promise((r) => setTimeout(r, 650));
-  const base = prompt.replace(/\.$/, "");
-  const picks = flourishes.slice(0, 3).join(" ");
-  return `${base}. ${picks}`;
+export type { EnhanceGoal };
+
+export async function enhancePrompt(
+  prompt: string,
+  subject: string,
+  goals: EnhanceGoal[] = allEnhanceGoals,
+  signal?: AbortSignal,
+): Promise<string> {
+  const res = await fetch("/api/vision/enhance", {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, subject, goals }),
+  });
+
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({ error: "Enhancement failed" }))) as {
+      error?: string;
+    };
+    throw new Error(err.error ?? `HTTP ${res.status}`);
+  }
+
+  const data = (await res.json()) as { prompt: string };
+  return data.prompt;
 }

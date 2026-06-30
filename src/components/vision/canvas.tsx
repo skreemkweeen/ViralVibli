@@ -16,9 +16,10 @@ import {
   MagicWand,
   SquaresFour,
   Tag,
+  StopCircle,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import { useVision } from "@/lib/vision/vision-store";
-import { enhancePrompt } from "@/lib/vision/enhance";
 import { ConceptCard } from "./concept-card";
 
 type Tab = "canvas" | "saved" | "history" | "collections" | "favorites";
@@ -36,6 +37,10 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
     prompt,
     generate,
     generating,
+    enhancing,
+    enhancedPrompt,
+    generateError,
+    cancelGeneration,
     concepts,
     history,
     restore,
@@ -51,9 +56,7 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
   const [copied, setCopied] = useState(false);
   const [query, setQuery] = useState("");
 
-  // enhancement
-  const [enhancing, setEnhancing] = useState(false);
-  const [enhanced, setEnhanced] = useState<string | null>(null);
+  // local copy state for enhanced prompt
   const [enhancedCopied, setEnhancedCopied] = useState(false);
 
   // save-with-tags popover
@@ -74,8 +77,8 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
     ? saved.filter((s) => s.tags.includes(tagFilter))
     : saved;
 
-  // a fresh direction invalidates a stale enhancement
-  useEffect(() => setEnhanced(null), [prompt]);
+  // reset enhanced-copy badge when the enhanced prompt changes
+  useEffect(() => setEnhancedCopied(false), [enhancedPrompt]);
 
   useEffect(() => {
     if (!saveOpen) return;
@@ -116,20 +119,13 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
   }
 
   function exportPrompt() {
-    const blob = new Blob([enhanced ?? prompt], { type: "text/plain" });
+    const blob = new Blob([enhancedPrompt ?? prompt], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "vision-direction.txt";
     a.click();
     URL.revokeObjectURL(url);
-  }
-
-  async function enhance() {
-    setEnhancing(true);
-    const result = await enhancePrompt(prompt);
-    setEnhanced(result);
-    setEnhancing(false);
   }
 
   function doSave(tags: string[]) {
@@ -231,62 +227,81 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
                 {prompt}
               </p>
 
-              {/* enhancement */}
-              <div className="mt-3">
-                {!enhanced && (
-                  <button
-                    onClick={enhance}
-                    disabled={enhancing}
-                    className="inline-flex items-center gap-1.5 text-[13px] text-accent-fg transition-opacity hover:opacity-80 disabled:opacity-60"
-                  >
-                    <MagicWand
-                      className={`size-4 ${enhancing ? "animate-pulse" : ""}`}
-                    />
-                    {enhancing ? "Enhancing..." : "Enhance with detail"}
-                  </button>
-                )}
-                {enhanced && (
-                  <div className="rounded-xl border border-accent/25 bg-accent/[0.05] p-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-accent-fg">
-                        <MagicWand className="size-3.5" />
-                        Enhanced
-                      </span>
-                      <button
-                        onClick={() => copy(enhanced, "enhanced")}
-                        className="flex items-center gap-1.5 text-[12.5px] text-muted hover:text-ink"
-                      >
-                        {enhancedCopied ? (
-                          <Check className="size-3.5 text-accent-fg" />
-                        ) : (
-                          <Copy className="size-3.5" />
-                        )}
-                        {enhancedCopied ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-                    <p className="mt-2 text-[14px] leading-relaxed text-ink">
-                      {enhanced}
+              {/* AI-enhanced preview — shown once enhance step completes */}
+              {enhancedPrompt && (
+                <div className="mt-3 rounded-xl border border-accent/25 bg-accent/[0.05] p-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-accent-fg">
+                      <MagicWand className="size-3.5" />
+                      AI Enhanced
+                    </span>
+                    <button
+                      onClick={() => copy(enhancedPrompt, "enhanced")}
+                      className="flex items-center gap-1.5 text-[12.5px] text-muted hover:text-ink"
+                    >
+                      {enhancedCopied ? (
+                        <Check className="size-3.5 text-accent-fg" />
+                      ) : (
+                        <Copy className="size-3.5" />
+                      )}
+                      {enhancedCopied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[14px] leading-relaxed text-ink">
+                    {enhancedPrompt}
+                  </p>
+                </div>
+              )}
+
+              {/* Error state */}
+              {generateError && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-3.5"
+                >
+                  <WarningCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
+                  <div>
+                    <p className="text-[13px] text-red-400">{generateError.message}</p>
+                    <p className="mt-0.5 text-[12px] text-red-400/70">
+                      Adjust your direction and try again.
                     </p>
                   </div>
+                </div>
+              )}
+
+              {/* Generate / cancel row */}
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={generate}
+                  disabled={generating}
+                  className="relative flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-medium text-accent-ink transition-colors hover:bg-[#d6f56b] disabled:opacity-80"
+                >
+                  <Sparkle
+                    weight="fill"
+                    className={`size-4 ${generating ? "animate-pulse" : ""}`}
+                  />
+                  {enhancing
+                    ? "Enhancing..."
+                    : generating
+                      ? "Generating..."
+                      : "Generate concepts"}
+                  {!generating && (
+                    <kbd className="absolute right-3 hidden rounded bg-accent-ink/10 px-1.5 py-0.5 font-mono text-[11px] text-accent-ink/70 sm:inline">
+                      ⌘⏎
+                    </kbd>
+                  )}
+                </button>
+                {generating && (
+                  <button
+                    onClick={cancelGeneration}
+                    aria-label="Cancel generation"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line text-muted transition-colors hover:border-faint hover:text-ink"
+                  >
+                    <StopCircle className="size-5" />
+                  </button>
                 )}
               </div>
-
-              <button
-                onClick={generate}
-                disabled={generating}
-                className="relative mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-medium text-accent-ink transition-colors hover:bg-[#d6f56b] disabled:opacity-80"
-              >
-                <Sparkle
-                  weight="fill"
-                  className={`size-4 ${generating ? "animate-pulse" : ""}`}
-                />
-                {generating ? "Generating..." : "Generate concepts"}
-                {!generating && (
-                  <kbd className="absolute right-3 hidden rounded bg-accent-ink/10 px-1.5 py-0.5 font-mono text-[11px] text-accent-ink/70 sm:inline">
-                    ⌘⏎
-                  </kbd>
-                )}
-              </button>
             </div>
 
             {/* recent generations */}
