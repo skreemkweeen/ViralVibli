@@ -1,5 +1,6 @@
 import { tiers } from "@/lib/content";
 import { Reveal } from "@/components/ui/reveal";
+import { MaskText } from "@/components/ui/mask-text";
 import { Button } from "@/components/ui/button";
 import { Check } from "@phosphor-icons/react/dist/ssr";
 
@@ -7,15 +8,17 @@ export function Pricing() {
   return (
     <section id="pricing" className="py-28 md:py-36">
       <div className="mx-auto max-w-[1180px] px-5">
-        <Reveal className="max-w-2xl">
-          <h2 className="display text-[clamp(2.2rem,5vw,3.6rem)]">
+        <div className="max-w-2xl">
+          <MaskText className="display text-[clamp(2.2rem,5vw,3.6rem)]">
             Start free. Grow into it.
-          </h2>
-          <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
-            One subscription instead of a dozen. Cancel anytime, keep
-            everything you have made.
-          </p>
-        </Reveal>
+          </MaskText>
+          <Reveal delay={0.1}>
+            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
+              One subscription instead of a dozen. Cancel anytime, keep
+              everything you have made.
+            </p>
+          </Reveal>
+        </div>
 
         <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-3">
           {tiers.map((t, i) => (

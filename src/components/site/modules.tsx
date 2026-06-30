@@ -1,5 +1,7 @@
 import { modules } from "@/lib/content";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
+import { MaskText } from "@/components/ui/mask-text";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 
 // index → column span (sums to 12 per row; 12 cells, no empties).
@@ -24,15 +26,17 @@ export function Modules() {
   return (
     <section id="modules" className="relative py-28 md:py-36">
       <div className="mx-auto max-w-[1180px] px-5">
-        <Reveal className="max-w-2xl">
-          <h2 className="display text-[clamp(2.2rem,5vw,3.6rem)]">
+        <div className="max-w-2xl">
+          <MaskText className="display text-[clamp(2.2rem,5vw,3.6rem)]">
             One workspace. Every part of the job.
-          </h2>
-          <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
-            Twelve studios that used to be twelve subscriptions. They share one
-            brain, so everything you make stays on brand.
-          </p>
-        </Reveal>
+          </MaskText>
+          <Reveal delay={0.1}>
+            <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
+              Twelve studios that used to be twelve subscriptions. They share
+              one brain, so everything you make stays on brand.
+            </p>
+          </Reveal>
+        </div>
 
         <RevealGroup className="mt-14 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {modules.map((m, i) => {
@@ -41,13 +45,12 @@ export function Modules() {
             const isWide = wide.includes(i);
             return (
               <RevealItem key={m.name} className={spanClass[i]}>
+                <SpotlightCard className="h-full">
                 <article
                   className={`group relative flex h-full min-h-[180px] flex-col justify-between overflow-hidden rounded-[var(--radius-card)] border border-line p-6 transition-colors duration-300 hover:border-faint ${
                     i === 0
                       ? "bg-gradient-to-br from-accent/[0.10] to-surface"
-                      : i === 5
-                        ? "bg-surface"
-                        : "bg-surface"
+                      : "bg-surface"
                   }`}
                 >
                   {i === 5 && (
@@ -83,6 +86,7 @@ export function Modules() {
                     </p>
                   </div>
                 </article>
+                </SpotlightCard>
               </RevealItem>
             );
           })}

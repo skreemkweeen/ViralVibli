@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useReducedMotion } from "motion/react";
 import { studios } from "@/lib/content";
+import { MaskText } from "@/components/ui/mask-text";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -45,9 +46,9 @@ export function Studios() {
       {/* desktop: pinned horizontal pan. mobile: scroll-snap row. */}
       <div ref={wrap} className="lg:min-h-[100dvh] lg:overflow-hidden">
         <div className="mx-auto max-w-[1180px] px-5 pt-0 lg:pt-20">
-          <h2 className="display max-w-2xl text-[clamp(2.2rem,5vw,3.6rem)] lg:absolute lg:z-10">
+          <MaskText className="display max-w-2xl text-[clamp(2.2rem,5vw,3.6rem)] lg:absolute lg:z-10">
             Made to be seen in motion.
-          </h2>
+          </MaskText>
         </div>
 
         <div

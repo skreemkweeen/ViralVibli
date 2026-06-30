@@ -9,10 +9,11 @@ import { Pricing } from "@/components/site/pricing";
 import { Faq } from "@/components/site/faq";
 import { Cta } from "@/components/site/cta";
 import { Footer } from "@/components/site/footer";
+import { StickyCta } from "@/components/site/sticky-cta";
 
 export default function Home() {
   return (
-    <main className="relative">
+    <main id="main-content" className="relative">
       <Nav />
       <Hero />
       <LogoWall />
@@ -24,6 +25,7 @@ export default function Home() {
       <Faq />
       <Cta />
       <Footer />
+      <StickyCta />
     </main>
   );
 }

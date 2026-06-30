@@ -33,8 +33,33 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="antialiased">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-ink"
+        >
+          Skip to content
+        </a>
         <div className="grain" aria-hidden="true" />
         <SmoothScroll>{children}</SmoothScroll>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "ViralVibli",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              description:
+                "The creator operating system. Create, grow, and monetize across every platform from one workspace.",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+              },
+            }),
+          }}
+        />
       </body>
     </html>
   );

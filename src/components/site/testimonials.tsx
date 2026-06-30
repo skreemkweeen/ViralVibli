@@ -1,15 +1,14 @@
 import { testimonials } from "@/lib/content";
 import { Reveal } from "@/components/ui/reveal";
+import { MaskText } from "@/components/ui/mask-text";
 
 export function Testimonials() {
   return (
     <section className="py-28 md:py-36">
       <div className="mx-auto max-w-[1180px] px-5">
-        <Reveal className="max-w-2xl">
-          <h2 className="display text-[clamp(2.2rem,5vw,3.6rem)]">
-            Creators who stopped tab-switching.
-          </h2>
-        </Reveal>
+        <MaskText className="display max-w-2xl text-[clamp(2.2rem,5vw,3.6rem)]">
+          Creators who stopped tab-switching.
+        </MaskText>
 
         <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2">
           {testimonials.map((t, i) => (

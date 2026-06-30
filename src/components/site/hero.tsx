@@ -60,12 +60,18 @@ export function Hero() {
         {/* left: message */}
         <div className="max-w-xl">
           <h1 className="display text-[clamp(3.2rem,9vw,6.2rem)]">
-            <motion.span className="block" {...enter(0.05)}>
-              Create. Grow.
-            </motion.span>
-            <motion.span className="block text-accent" {...enter(0.16)}>
-              Monetize.
-            </motion.span>
+            {["Create. Grow.", "Monetize."].map((line, i) => (
+              <span key={line} className="block overflow-hidden pb-[0.08em]">
+                <motion.span
+                  className={`block ${i === 1 ? "text-accent" : ""}`}
+                  initial={reduce ? false : { y: "115%" }}
+                  animate={{ y: 0 }}
+                  transition={{ duration: 0.95, delay: 0.05 + i * 0.12, ease }}
+                >
+                  {line}
+                </motion.span>
+              </span>
+            ))}
           </h1>
 
           <motion.p

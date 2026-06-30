@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Plus } from "@phosphor-icons/react";
 import { faqs } from "@/lib/content";
-import { Reveal } from "@/components/ui/reveal";
+import { MaskText } from "@/components/ui/mask-text";
 
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
@@ -13,11 +13,9 @@ export function Faq() {
   return (
     <section id="faq" className="py-28 md:py-36">
       <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-12 px-5 lg:grid-cols-[0.8fr_1.2fr]">
-        <Reveal>
-          <h2 className="display text-[clamp(2.2rem,5vw,3.6rem)]">
-            Questions, answered.
-          </h2>
-        </Reveal>
+        <MaskText className="display text-[clamp(2.2rem,5vw,3.6rem)]">
+          Questions, answered.
+        </MaskText>
 
         <div className="divide-y divide-line border-y border-line">
           {faqs.map((f, i) => {
