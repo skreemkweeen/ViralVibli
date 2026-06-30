@@ -91,11 +91,11 @@ export const appModules: AppModule[] = [
   {
     id: "prompts",
     name: "Prompt Vault",
-    href: "/m/prompts",
+    href: "/vault",
     icon: Vault,
-    status: "soon",
+    status: "live",
     group: "create",
-    blurb: "Ten thousand organized prompts, searchable.",
+    blurb: "Save, organize, and AI-transform prompts for any platform.",
   },
   {
     id: "brand",

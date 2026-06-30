@@ -129,6 +129,36 @@ export interface StoryProvider {
   generate(req: StoryRequest, signal?: AbortSignal): Promise<StoryResult>;
 }
 
+// ─── Vault types ──────────────────────────────────────────────────────────────
+
+export type TransformOp =
+  | "improve"
+  | "expand"
+  | "condense"
+  | "rewrite"
+  | "make-casual"
+  | "make-professional"
+  | "make-creative"
+  | "variations";
+
+export type VaultTransformRequest = {
+  content: string;
+  operation: TransformOp;
+  platform?: string;
+  count?: number;
+};
+
+export type VaultTransformResult = {
+  content: string;
+  variations?: string[];
+  provider: string;
+};
+
+export interface VaultTransformProvider {
+  readonly id: string;
+  transform(req: VaultTransformRequest, signal?: AbortSignal): Promise<VaultTransformResult>;
+}
+
 /** Provider failure that should surface to retry logic. */
 export class ProviderError extends Error {
   constructor(

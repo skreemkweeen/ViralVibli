@@ -4,11 +4,13 @@
  * The UI never touches this file.
  */
 
-import type { TextProvider, ImageProvider, StoryProvider } from "./types";
+import type { TextProvider, ImageProvider, StoryProvider, VaultTransformProvider } from "./types";
 import { localTextProvider, localImageProvider } from "./providers/local";
 import { localStoryProvider } from "./providers/local/story";
+import { localVaultProvider } from "./providers/local/vault";
 import { makeAnthropicTextProvider } from "./providers/anthropic";
 import { makeAnthropicStoryProvider } from "./providers/anthropic/story";
+import { makeAnthropicVaultProvider } from "./providers/anthropic/vault";
 import { makeOpenAITextProvider, makeOpenAIImageProvider } from "./providers/openai";
 import { makeFalImageProvider } from "./providers/fal";
 import { makeReplicateImageProvider } from "./providers/replicate";
@@ -80,10 +82,29 @@ function buildStoryProviders(): StoryProvider[] {
   return providers;
 }
 
+// ─── Vault providers ──────────────────────────────────────────────────────────
+
+function buildVaultProviders(): VaultTransformProvider[] {
+  const providers: VaultTransformProvider[] = [];
+  const anthropicKey = env("ANTHROPIC_API_KEY");
+  const preferred = env("VAULT_PROVIDER");
+
+  if (anthropicKey) providers.push(makeAnthropicVaultProvider(anthropicKey));
+  providers.push(localVaultProvider);
+
+  if (preferred) {
+    const found = providers.find((p) => p.id === preferred);
+    if (found) return [found, ...providers.filter((p) => p.id !== preferred)];
+  }
+
+  return providers;
+}
+
 // Memoize for the lifetime of the server process (not per-request)
 let _textProviders: TextProvider[] | null = null;
 let _imageProviders: ImageProvider[] | null = null;
 let _storyProviders: StoryProvider[] | null = null;
+let _vaultProviders: VaultTransformProvider[] | null = null;
 
 export function getTextProviders(): TextProvider[] {
   return (_textProviders ??= buildTextProviders());
@@ -107,4 +128,12 @@ export function getStoryProviders(): StoryProvider[] {
 
 export function getPrimaryStoryProvider(): StoryProvider {
   return getStoryProviders()[0]!;
+}
+
+export function getVaultProviders(): VaultTransformProvider[] {
+  return (_vaultProviders ??= buildVaultProviders());
+}
+
+export function getPrimaryVaultProvider(): VaultTransformProvider {
+  return getVaultProviders()[0]!;
 }

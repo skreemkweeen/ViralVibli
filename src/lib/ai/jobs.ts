@@ -6,8 +6,8 @@
  * createJob is internal; callers use createImageJob / createStoryJob.
  */
 
-import type { Job, ImageRequest, StoryRequest } from "./types";
-import { getPrimaryImageProvider, getPrimaryStoryProvider } from "./registry";
+import type { Job, ImageRequest, StoryRequest, VaultTransformRequest } from "./types";
+import { getPrimaryImageProvider, getPrimaryStoryProvider, getPrimaryVaultProvider } from "./registry";
 import { ProviderError } from "./types";
 
 const jobs = new Map<string, Job>();
@@ -114,6 +114,15 @@ export function createStoryJob(request: StoryRequest): Job {
   return createJob(
     request,
     (req, signal) => provider.generate(req as StoryRequest, signal),
+    provider.id,
+  );
+}
+
+export function createVaultJob(request: VaultTransformRequest): Job {
+  const provider = getPrimaryVaultProvider();
+  return createJob(
+    request,
+    (req, signal) => provider.transform(req as VaultTransformRequest, signal),
     provider.id,
   );
 }
