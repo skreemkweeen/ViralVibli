@@ -41,7 +41,7 @@ export function Modules() {
         <RevealGroup className="mt-14 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {modules.map((m, i) => {
             const Icon = m.icon;
-            const feature = i === 0 || i === 5 || i === 11;
+            // wide cells (col-span-7) are also the featured, lime-accented ones
             const isWide = wide.includes(i);
             return (
               <RevealItem key={m.name} className={spanClass[i]}>
@@ -63,10 +63,10 @@ export function Modules() {
                   <div className="relative flex items-start justify-between">
                     <span
                       className={`grid size-10 place-items-center rounded-xl border border-line-soft ${
-                        feature ? "bg-accent text-accent-ink" : "bg-bg text-accent"
+                        isWide ? "bg-accent text-accent-ink" : "bg-bg text-accent"
                       }`}
                     >
-                      <Icon weight={feature ? "fill" : "regular"} className="size-5" />
+                      <Icon weight={isWide ? "fill" : "regular"} className="size-5" />
                     </span>
                     <ArrowUpRight
                       weight="bold"

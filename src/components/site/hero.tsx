@@ -95,15 +95,18 @@ export function Hero() {
           </motion.div>
         </div>
 
-        {/* right: real workspace, floating */}
-        <motion.div
-          style={{ y: previewY, rotate: previewRotate }}
-          initial={reduce ? false : { opacity: 0, scale: 0.96, y: 30 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 1.1, delay: 0.3, ease }}
-          className="relative"
-        >
-          <ProductPreview />
+        {/* right: real workspace, floating.
+            Outer wrapper owns the scroll parallax (y/rotate MotionValues);
+            inner wrapper owns the entrance, so the two never fight over the
+            same transform property. */}
+        <motion.div style={{ y: previewY, rotate: previewRotate }} className="relative">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, scale: 0.96, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 1.1, delay: 0.3, ease }}
+          >
+            <ProductPreview />
+          </motion.div>
         </motion.div>
       </div>
     </section>

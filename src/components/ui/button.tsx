@@ -8,8 +8,7 @@ const base =
 
 const variants: Record<Variant, string> = {
   // lime on near-black ink: WCAG AA large/UI safe, brand-locked accent
-  primary:
-    "bg-accent text-accent-ink px-6 h-12 hover:bg-[#d6f56b] shadow-[0_0_0_1px_rgba(200,240,78,0.0)]",
+  primary: "bg-accent text-accent-ink px-6 h-12 hover:bg-[#d6f56b]",
   ghost:
     "border border-line text-ink px-6 h-12 hover:border-faint hover:bg-surface",
 };
