@@ -17,10 +17,10 @@ import {
   SquaresFour,
   Tag,
   StopCircle,
-  WarningCircle,
 } from "@phosphor-icons/react";
 import { useVision } from "@/lib/vision/vision-store";
 import { ConceptCard } from "./concept-card";
+import { StudioEmptyState, StudioLoadingState, StudioErrorState } from "@/components/studio";
 
 type Tab = "canvas" | "saved" | "history" | "collections" | "favorites";
 
@@ -56,10 +56,8 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
   const [copied, setCopied] = useState(false);
   const [query, setQuery] = useState("");
 
-  // local copy state for enhanced prompt
   const [enhancedCopied, setEnhancedCopied] = useState(false);
 
-  // save-with-tags popover
   const [saveOpen, setSaveOpen] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const saveRef = useRef<HTMLDivElement>(null);
@@ -77,7 +75,6 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
     ? saved.filter((s) => s.tags.includes(tagFilter))
     : saved;
 
-  // reset enhanced-copy badge when the enhanced prompt changes
   useEffect(() => setEnhancedCopied(false), [enhancedPrompt]);
 
   useEffect(() => {
@@ -90,7 +87,7 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
     return () => document.removeEventListener("mousedown", onDown);
   }, [saveOpen]);
 
-  // power-user shortcut: Cmd/Ctrl+Enter generates from anywhere in the studio
+  // Cmd/Ctrl+Enter generates from anywhere in the studio
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -227,7 +224,7 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
                 {prompt}
               </p>
 
-              {/* AI-enhanced preview — shown once enhance step completes */}
+              {/* AI-enhanced preview */}
               {enhancedPrompt && (
                 <div className="mt-3 rounded-xl border border-accent/25 bg-accent/[0.05] p-3.5">
                   <div className="flex items-center justify-between">
@@ -255,18 +252,11 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
 
               {/* Error state */}
               {generateError && (
-                <div
-                  role="alert"
-                  aria-live="assertive"
-                  className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-3.5"
-                >
-                  <WarningCircle className="mt-0.5 size-4 shrink-0 text-red-400" />
-                  <div>
-                    <p className="text-[13px] text-red-400">{generateError.message}</p>
-                    <p className="mt-0.5 text-[12px] text-red-400/70">
-                      Adjust your direction and try again.
-                    </p>
-                  </div>
+                <div className="mt-3">
+                  <StudioErrorState
+                    message={generateError.message}
+                    hint="Adjust your direction and try again."
+                  />
                 </div>
               )}
 
@@ -324,22 +314,22 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
               </div>
 
               {generating && concepts.length === 0 ? (
-                <SkeletonGrid />
+                <StudioLoadingState count={6} aspect="4 / 5" />
               ) : concepts.length === 0 ? (
                 <Onboarding onBrowsePresets={onBrowsePresets} />
               ) : filtered.length === 0 ? (
-                <Empty
+                <StudioEmptyState
                   icon={<MagnifyingGlass className="size-6" />}
                   title="No matches"
                   body={`Nothing matches "${query}".`}
                 />
               ) : (
-                <Grid>
-                  {generating && <SkeletonCards count={3} />}
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                  {generating && <InlineSkeletons count={3} />}
                   {filtered.map((c) => (
                     <ConceptCard key={c.id} concept={c} />
                   ))}
-                </Grid>
+                </div>
               )}
             </div>
           </div>
@@ -347,7 +337,7 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
 
         {tab === "saved" &&
           (saved.length === 0 ? (
-            <Empty
+            <StudioEmptyState
               icon={<BookmarkSimple className="size-6" />}
               title="No saved prompts"
               body="Save a composed direction from the bookmark above to reuse it later."
@@ -420,24 +410,24 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
 
         {tab === "favorites" &&
           (favorites.length === 0 ? (
-            <Empty
+            <StudioEmptyState
               icon={<Heart className="size-6" />}
               title="No favorites yet"
               body="Tap the heart on any concept to keep it here."
             />
           ) : (
-            <Grid>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               {favorites.map((c) => (
                 <ConceptCard key={c.id} concept={c} />
               ))}
-            </Grid>
+            </div>
           ))}
 
         {tab === "collections" &&
           (collections.every(
             (col) => !concepts.some((c) => c.collectionId === col.id),
           ) ? (
-            <Empty
+            <StudioEmptyState
               icon={<FolderSimple className="size-6" />}
               title="Collections are empty"
               body="Save concepts into a collection from the bookmark action."
@@ -453,11 +443,11 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
                       {col.name}{" "}
                       <span className="text-faint">{items.length}</span>
                     </h3>
-                    <Grid>
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
                       {items.map((c) => (
                         <ConceptCard key={c.id} concept={c} />
                       ))}
-                    </Grid>
+                    </div>
                   </div>
                 );
               })}
@@ -466,7 +456,7 @@ export function Canvas({ onBrowsePresets }: { onBrowsePresets: () => void }) {
 
         {tab === "history" &&
           (history.length === 0 ? (
-            <Empty
+            <StudioEmptyState
               icon={<ClockCounterClockwise className="size-6" />}
               title="No history yet"
               body="Every generation is recorded here so you can return to it."
@@ -565,19 +555,7 @@ function FilterChip({
   );
 }
 
-function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{children}</div>;
-}
-
-function SkeletonGrid() {
-  return (
-    <Grid>
-      <SkeletonCards count={6} />
-    </Grid>
-  );
-}
-
-function SkeletonCards({ count }: { count: number }) {
+function InlineSkeletons({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
@@ -618,26 +596,6 @@ function Onboarding({ onBrowsePresets }: { onBrowsePresets: () => void }) {
           Browse presets
         </button>
       </div>
-    </div>
-  );
-}
-
-function Empty({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line py-16 text-center">
-      <span className="grid size-12 place-items-center rounded-xl border border-line-soft bg-surface text-faint">
-        {icon}
-      </span>
-      <p className="mt-4 text-[14px] font-medium text-ink">{title}</p>
-      <p className="mt-1 max-w-xs text-[13px] text-muted">{body}</p>
     </div>
   );
 }

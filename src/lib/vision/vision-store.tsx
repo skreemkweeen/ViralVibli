@@ -10,8 +10,8 @@ import {
   useState,
 } from "react";
 import { assemblePrompt, emptyDirection, type Direction } from "./prompt";
-import type { Job } from "@/lib/ai/types";
-import { allEnhanceGoals } from "@/lib/ai/types";
+import type { ImageResult } from "@/lib/ai/types";
+import { useGeneration } from "@/hooks/studio/use-generation";
 
 // ─── Domain types ─────────────────────────────────────────────────────────────
 
@@ -129,19 +129,14 @@ function load<T>(key: string, fallback: T): T {
 
 export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [direction, setDirection] = useState<Direction>(emptyDirection);
-  const [generating, setGenerating] = useState(false);
-  const [enhancing, setEnhancing] = useState(false);
-  const [enhancedPrompt, setEnhancedPrompt] = useState<string | null>(null);
-  const [generateError, setGenerateError] = useState<GenerateError>(null);
   const [concepts, setConcepts] = useState<Concept[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [saved, setSaved] = useState<SavedPrompt[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Cancellation — ref so the closure always sees the latest value
-  const abortRef = useRef<AbortController | null>(null);
-  const jobIdRef = useRef<string | null>(null);
+  // Captures direction at generate-call time so the async result can read it
+  const directionSnapshotRef = useRef<Direction>(direction);
 
   // ── Hydrate ──
   useEffect(() => {
@@ -173,11 +168,58 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
 
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
 
+  // ── Generation hook ───────────────────────────────────────────────────────
+  const onResult = useCallback(
+    (result: ImageResult, finalPrompt: string | null, basePrompt: string) => {
+      const snap = directionSnapshotRef.current;
+      const made: Concept[] = result.images.map((img, i) => ({
+        id: uid("concept"),
+        prompt: basePrompt,
+        enhancedPrompt: finalPrompt ?? undefined,
+        seed: img.seed,
+        imageUrl: img.url,
+        width: img.width,
+        height: img.height,
+        categoryId: snap.category,
+        aspectId: snap.aspect,
+        styleId: snap.style,
+        provider: img.provider,
+        createdAt: Date.now() + i,
+        favorite: false,
+        collectionId: null,
+      }));
+
+      setConcepts((c) => [...made, ...c]);
+      setHistory((h) =>
+        [
+          {
+            id: uid("h"),
+            prompt: basePrompt,
+            enhancedPrompt: finalPrompt ?? undefined,
+            direction: snap,
+            createdAt: Date.now(),
+          },
+          ...h,
+        ].slice(0, 50),
+      );
+    },
+    [],
+  );
+
+  const {
+    generating,
+    enhancing,
+    enhancedPrompt,
+    error,
+    generate: runGenerate,
+    cancel: cancelGeneration,
+    reset,
+  } = useGeneration(onResult);
+
   // Clear stale enhanced preview when the composed brief changes
   useEffect(() => {
-    setEnhancedPrompt(null);
-    setGenerateError(null);
-  }, [prompt]);
+    reset();
+  }, [prompt, reset]);
 
   const setField = useCallback(
     <K extends keyof Direction>(key: K, value: Direction[K]) =>
@@ -192,152 +234,16 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
 
   const resetDirection = useCallback(() => setDirection(emptyDirection), []);
 
-  // ── Cancel ────────────────────────────────────────────────────────────────
-  const cancelGeneration = useCallback(() => {
-    abortRef.current?.abort();
-    // Best-effort job cancellation — fire and forget
-    if (jobIdRef.current) {
-      void fetch(`/api/vision/jobs/${jobIdRef.current}`, { method: "DELETE" });
-      jobIdRef.current = null;
-    }
-    setGenerating(false);
-    setEnhancing(false);
-    setGenerateError(null);
-  }, []);
-
-  // ── Generate ──────────────────────────────────────────────────────────────
   const generate = useCallback(() => {
-    if (generating) return;
-
-    const ac = new AbortController();
-    abortRef.current = ac;
-    setGenerating(true);
-    setEnhancing(true);
-    setEnhancedPrompt(null);
-    setGenerateError(null);
-
-    const assembledPrompt = prompt;
-    const snapshotDirection = direction;
-
-    (async () => {
-      // ── Step 1: Enhance ────────────────────────────────────────────────
-      let finalPrompt = assembledPrompt;
-      try {
-        const enhRes = await fetch("/api/vision/enhance", {
-          method: "POST",
-          signal: ac.signal,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: assembledPrompt,
-            subject: direction.subject || "",
-            goals: allEnhanceGoals,
-          }),
-        });
-        if (enhRes.ok) {
-          const enhData = (await enhRes.json()) as { prompt: string };
-          finalPrompt = enhData.prompt;
-          setEnhancedPrompt(finalPrompt);
-        }
-      } catch {
-        // Enhancement failure is non-fatal — proceed with base prompt
-      }
-      setEnhancing(false);
-
-      if (ac.signal.aborted) return;
-
-      // ── Step 2: Create job ─────────────────────────────────────────────
-      const aspectRaw = snapshotDirection.aspect.replace("-", ":");
-      let jobId: string;
-      try {
-        const jobRes = await fetch("/api/vision/generate", {
-          method: "POST",
-          signal: ac.signal,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: finalPrompt,
-            aspect: aspectRaw,
-            count: 3,
-            quality: snapshotDirection.quality,
-          }),
-        });
-        if (!jobRes.ok) throw new Error(`HTTP ${jobRes.status}`);
-        const job = (await jobRes.json()) as Job;
-        jobId = job.id;
-        jobIdRef.current = jobId;
-      } catch (err) {
-        if (!ac.signal.aborted) {
-          setGenerateError({
-            message: err instanceof Error ? err.message : "Failed to start generation",
-          });
-          setGenerating(false);
-        }
-        return;
-      }
-
-      // ── Step 3: Poll ───────────────────────────────────────────────────
-      const deadline = Date.now() + 3 * 60 * 1000;
-      while (Date.now() < deadline) {
-        if (ac.signal.aborted) return;
-        await new Promise((r) => setTimeout(r, 1200));
-        if (ac.signal.aborted) return;
-
-        try {
-          const pollRes = await fetch(`/api/vision/jobs/${jobId}`, { signal: ac.signal });
-          if (!pollRes.ok) continue;
-          const job = (await pollRes.json()) as Job;
-
-          if (job.status === "succeeded" && job.result) {
-            const made: Concept[] = job.result.images.map((img, i) => ({
-              id: uid("concept"),
-              prompt: assembledPrompt,
-              enhancedPrompt: finalPrompt !== assembledPrompt ? finalPrompt : undefined,
-              seed: img.seed,
-              imageUrl: img.url,
-              width: img.width,
-              height: img.height,
-              categoryId: snapshotDirection.category,
-              aspectId: snapshotDirection.aspect,
-              styleId: snapshotDirection.style,
-              provider: img.provider,
-              createdAt: Date.now() + i,
-              favorite: false,
-              collectionId: null,
-            }));
-
-            setConcepts((c) => [...made, ...c]);
-            setHistory((h) =>
-              [
-                {
-                  id: uid("h"),
-                  prompt: assembledPrompt,
-                  enhancedPrompt: finalPrompt !== assembledPrompt ? finalPrompt : undefined,
-                  direction: snapshotDirection,
-                  createdAt: Date.now(),
-                },
-                ...h,
-              ].slice(0, 50),
-            );
-            setGenerating(false);
-            jobIdRef.current = null;
-            return;
-          }
-
-          if (job.status === "failed" || job.status === "cancelled") {
-            setGenerateError({ message: job.error ?? "Generation failed" });
-            setGenerating(false);
-            jobIdRef.current = null;
-            return;
-          }
-        } catch {
-          // transient poll error — keep polling
-        }
-      }
-
-      setGenerateError({ message: "Generation timed out. Please try again." });
-      setGenerating(false);
-      jobIdRef.current = null;
-    })();
-  }, [generating, prompt, direction]);
+    directionSnapshotRef.current = direction;
+    runGenerate({
+      prompt,
+      subject: direction.subject || "",
+      aspect: direction.aspect,
+      count: 3,
+      quality: direction.quality,
+    });
+  }, [runGenerate, prompt, direction]);
 
   // ── Concept management ────────────────────────────────────────────────────
   const savePrompt = useCallback(
@@ -433,7 +339,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       generating,
       enhancing,
       enhancedPrompt,
-      generateError,
+      generateError: error ? { message: error } : null,
       cancelGeneration,
       concepts,
       generate,
@@ -462,7 +368,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       generating,
       enhancing,
       enhancedPrompt,
-      generateError,
+      error,
       cancelGeneration,
       concepts,
       generate,

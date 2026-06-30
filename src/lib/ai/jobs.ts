@@ -4,7 +4,7 @@
  * Replace the Map with Redis/Upstash for multi-instance deployments.
  */
 
-import type { Job, JobStatus, ImageRequest, ImageResult } from "./types";
+import type { Job, ImageRequest, ImageResult } from "./types";
 import { getPrimaryImageProvider } from "./registry";
 import { ProviderError } from "./types";
 
