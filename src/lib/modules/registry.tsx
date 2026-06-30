@@ -73,9 +73,9 @@ export const appModules: AppModule[] = [
   {
     id: "vision",
     name: "Vision Studio",
-    href: "/m/vision",
+    href: "/vision",
     icon: Camera,
-    status: "soon",
+    status: "live",
     group: "create",
     blurb: "Direct image generation with real photographic control.",
   },
