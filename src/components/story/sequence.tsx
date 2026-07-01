@@ -16,6 +16,7 @@ import { useStory } from "@/lib/story/store";
 import { getFramework } from "@/lib/story/frameworks";
 import { platforms, optionLabel } from "@/lib/story/data";
 import { StoryPhonePreview } from "./phone-preview";
+import { StoryInsightsBar } from "./insights-bar";
 
 type ConceptHeaderProps = {
   concept: StoryConcept;
@@ -105,6 +106,7 @@ function ConceptBlock({ concept }: { concept: StoryConcept }) {
         onRemove={() => removeConcept(concept.id)}
         onPreview={() => setPreviewOpen(true)}
       />
+      <StoryInsightsBar concept={concept} />
       <StoryPhonePreview
         concept={concept}
         open={previewOpen}

@@ -1,17 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { SquaresFour, Sidebar as SidebarIcon } from "@phosphor-icons/react";
+import {
+  SquaresFour,
+  Sidebar as SidebarIcon,
+  Rows,
+} from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
 import { ControlPanel } from "./control-panel";
 import { Canvas } from "./canvas";
 import { PresetGallery } from "./preset-gallery";
 import { PromptComposer } from "./prompt-composer";
+import { CampaignPlanner } from "./campaign-planner";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
+  const [campaignOpen, setCampaignOpen] = useState(false);
 
   return (
     <VisionProvider>
@@ -40,6 +46,15 @@ export function VisionStudio() {
               >
                 <SidebarIcon className="size-4 text-accent-fg" weight={composerOpen ? "fill" : "regular"} />
                 Composer
+              </button>
+              <button
+                type="button"
+                onClick={() => setCampaignOpen(true)}
+                aria-label="Plan a 6-shot campaign"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <Rows className="size-4 text-accent-fg" />
+                Plan campaign
               </button>
               <button
                 type="button"
@@ -79,6 +94,7 @@ export function VisionStudio() {
       </div>
 
       <PresetGallery open={presetsOpen} onClose={() => setPresetsOpen(false)} />
+      <CampaignPlanner open={campaignOpen} onClose={() => setCampaignOpen(false)} />
     </VisionProvider>
   );
 }
