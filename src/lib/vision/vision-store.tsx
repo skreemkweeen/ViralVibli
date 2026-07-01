@@ -13,6 +13,15 @@ import { assemblePrompt, emptyDirection, type Direction } from "./prompt";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
+import {
+  addManualReference,
+  isConceptPinned,
+  pinConceptReference,
+  removeReference,
+  reorderReferences,
+  updateNote,
+  type MoodboardItem,
+} from "./moodboard";
 
 // ─── Domain types ─────────────────────────────────────────────────────────────
 
@@ -111,6 +120,15 @@ type VisionState = {
   removeSaved: (id: string) => void;
   restoreSaved: (entry: SavedPrompt) => void;
   allTags: string[];
+
+  // Moodboard
+  moodboard: MoodboardItem[];
+  addMoodboardReference: (title: string, note?: string, hue?: number) => void;
+  pinConceptToMoodboard: (conceptId: string, note?: string) => void;
+  removeMoodboardReference: (id: string) => void;
+  updateMoodboardNote: (id: string, note: string) => void;
+  reorderMoodboard: (from: number, to: number) => void;
+  isConceptOnMoodboard: (conceptId: string) => boolean;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -120,6 +138,7 @@ const KEY = {
   history: "vv-vision-history",
   collections: "vv-vision-collections",
   saved: "vv-vision-saved",
+  moodboard: "vv-vision-moodboard",
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -145,6 +164,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [saved, setSaved] = useState<SavedPrompt[]>([]);
+  const [moodboard, setMoodboard] = useState<MoodboardItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -161,6 +181,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       ]),
     );
     setSaved(load<SavedPrompt[]>(KEY.saved, []));
+    setMoodboard(load<MoodboardItem[]>(KEY.moodboard, []));
     setHydrated(true);
   }, []);
 
@@ -177,6 +198,9 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(KEY.saved, JSON.stringify(saved));
   }, [saved, hydrated]);
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(KEY.moodboard, JSON.stringify(moodboard));
+  }, [moodboard, hydrated]);
 
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
 
@@ -363,6 +387,59 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     return id;
   }, []);
 
+  // ── Moodboard actions ─────────────────────────────────────────────────────
+  const addMoodboardReference = useCallback(
+    (title: string, note?: string, hue?: number) =>
+      setMoodboard((items) =>
+        addManualReference(items, {
+          id: uid("mb"),
+          title,
+          note,
+          hue,
+        }),
+      ),
+    [],
+  );
+
+  const pinConceptToMoodboard = useCallback(
+    (conceptId: string, note?: string) => {
+      const concept = concepts.find((c) => c.id === conceptId);
+      if (!concept) return;
+      setMoodboard((items) =>
+        pinConceptReference(items, {
+          id: uid("mb"),
+          conceptId,
+          prompt: concept.enhancedPrompt ?? concept.prompt,
+          seed: concept.seed,
+          note,
+        }),
+      );
+    },
+    [concepts],
+  );
+
+  const removeMoodboardReference = useCallback(
+    (id: string) => setMoodboard((items) => removeReference(items, id)),
+    [],
+  );
+
+  const updateMoodboardNote = useCallback(
+    (id: string, note: string) =>
+      setMoodboard((items) => updateNote(items, id, note)),
+    [],
+  );
+
+  const reorderMoodboard = useCallback(
+    (from: number, to: number) =>
+      setMoodboard((items) => reorderReferences(items, from, to)),
+    [],
+  );
+
+  const isConceptOnMoodboard = useCallback(
+    (conceptId: string) => isConceptPinned(moodboard, conceptId),
+    [moodboard],
+  );
+
   const value = useMemo<VisionState>(
     () => ({
       direction,
@@ -395,6 +472,13 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       removeSaved,
       restoreSaved,
       allTags,
+      moodboard,
+      addMoodboardReference,
+      pinConceptToMoodboard,
+      removeMoodboardReference,
+      updateMoodboardNote,
+      reorderMoodboard,
+      isConceptOnMoodboard,
     }),
     [
       direction,
@@ -426,6 +510,13 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       removeSaved,
       restoreSaved,
       allTags,
+      moodboard,
+      addMoodboardReference,
+      pinConceptToMoodboard,
+      removeMoodboardReference,
+      updateMoodboardNote,
+      reorderMoodboard,
+      isConceptOnMoodboard,
     ],
   );
 

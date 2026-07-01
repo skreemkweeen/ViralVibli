@@ -15,6 +15,7 @@ import {
   X,
   MagicWand,
   Note,
+  PushPin,
 } from "@phosphor-icons/react";
 import { useVision, type Concept } from "@/lib/vision/vision-store";
 import { conceptGradient } from "@/lib/vision/prompt";
@@ -31,7 +32,10 @@ export function ConceptCard({ concept }: { concept: Concept }) {
     renameConcept,
     remixConcept,
     setConceptNotes,
+    pinConceptToMoodboard,
+    isConceptOnMoodboard,
   } = useVision();
+  const pinnedToMoodboard = isConceptOnMoodboard(concept.id);
   const [copied, setCopied] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -182,6 +186,13 @@ export function ConceptCard({ concept }: { concept: Concept }) {
               <MagicWand className="size-4" />
             </IconBtn>
           )}
+          <IconBtn
+            label={pinnedToMoodboard ? "Pinned to moodboard" : "Pin to moodboard"}
+            onClick={() => pinConceptToMoodboard(concept.id)}
+            active={pinnedToMoodboard}
+          >
+            <PushPin className="size-4" weight={pinnedToMoodboard ? "fill" : "regular"} />
+          </IconBtn>
           <IconBtn
             label={concept.notes ? "Edit note" : "Add note"}
             onClick={() => {

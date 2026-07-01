@@ -5,6 +5,7 @@ import {
   SquaresFour,
   Sidebar as SidebarIcon,
   Rows,
+  PushPin,
 } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
@@ -13,11 +14,13 @@ import { Canvas } from "./canvas";
 import { PresetGallery } from "./preset-gallery";
 import { PromptComposer } from "./prompt-composer";
 import { CampaignPlanner } from "./campaign-planner";
+import { MoodboardPanel } from "./moodboard-panel";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
   const [campaignOpen, setCampaignOpen] = useState(false);
+  const [moodboardOpen, setMoodboardOpen] = useState(false);
 
   return (
     <VisionProvider>
@@ -46,6 +49,15 @@ export function VisionStudio() {
               >
                 <SidebarIcon className="size-4 text-accent-fg" weight={composerOpen ? "fill" : "regular"} />
                 Composer
+              </button>
+              <button
+                type="button"
+                onClick={() => setMoodboardOpen(true)}
+                aria-label="Open moodboard"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <PushPin className="size-4 text-accent-fg" weight="fill" />
+                Moodboard
               </button>
               <button
                 type="button"
@@ -95,6 +107,7 @@ export function VisionStudio() {
 
       <PresetGallery open={presetsOpen} onClose={() => setPresetsOpen(false)} />
       <CampaignPlanner open={campaignOpen} onClose={() => setCampaignOpen(false)} />
+      <MoodboardPanel open={moodboardOpen} onClose={() => setMoodboardOpen(false)} />
     </VisionProvider>
   );
 }
