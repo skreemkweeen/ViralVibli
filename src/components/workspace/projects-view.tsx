@@ -8,6 +8,7 @@ import {
   DotsThree,
   MagnifyingGlass,
   Sparkle,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
@@ -95,7 +96,7 @@ export function ProjectsView() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             <Plus className="size-4" weight="bold" />
             New Project
@@ -117,29 +118,35 @@ export function ProjectsView() {
               New Project
             </p>
             <div className="space-y-3">
-              <input
-                ref={nameRef}
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreate();
-                  if (e.key === "Escape") setCreating(false);
-                }}
-                placeholder="Project name"
-                className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none"
-              />
-              <input
-                type="text"
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleCreate();
-                  if (e.key === "Escape") setCreating(false);
-                }}
-                placeholder="Description (optional)"
-                className="w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none"
-              />
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] text-faint">Project name</span>
+                <input
+                  ref={nameRef}
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreate();
+                    if (e.key === "Escape") setCreating(false);
+                  }}
+                  placeholder="e.g. Summer Campaign"
+                  className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] text-faint">Description <span className="text-faint/60">(optional)</span></span>
+                <input
+                  type="text"
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreate();
+                    if (e.key === "Escape") setCreating(false);
+                  }}
+                  placeholder="What is this project about?"
+                  className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                />
+              </label>
               {/* Color picker */}
               <div className="flex items-center gap-3">
                 <span className="text-[12px] text-faint">Color</span>
@@ -149,8 +156,9 @@ export function ProjectsView() {
                       key={c}
                       type="button"
                       onClick={() => setNewColor(c)}
-                      aria-label={c}
-                      className={`size-5 rounded-full transition-transform ${PROJECT_COLORS[c].dot} ${newColor === c ? "scale-125 ring-2 ring-offset-2 ring-offset-surface ring-white/20" : "opacity-60 hover:opacity-90"}`}
+                      aria-label={`Color: ${c}`}
+                      aria-pressed={newColor === c}
+                      className={`size-6 cursor-pointer rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${PROJECT_COLORS[c].dot} ${newColor === c ? "scale-125 ring-2 ring-offset-2 ring-offset-surface ring-white/20" : "opacity-60 hover:opacity-90 active:scale-110"}`}
                     />
                   ))}
                 </div>
@@ -161,7 +169,7 @@ export function ProjectsView() {
                 type="button"
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="rounded-xl bg-accent px-4 py-2 text-[13px] font-semibold text-accent-ink disabled:opacity-40"
+                className="h-10 cursor-pointer rounded-xl bg-accent px-4 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 disabled:cursor-default disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               >
                 Create
               </button>
@@ -172,7 +180,7 @@ export function ProjectsView() {
                   setNewName("");
                   setNewDesc("");
                 }}
-                className="rounded-xl border border-line px-4 py-2 text-[13px] text-muted transition-colors hover:text-ink"
+                className="h-10 cursor-pointer rounded-xl border border-line px-4 text-[13px] text-muted transition-colors hover:text-ink active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
               >
                 Cancel
               </button>
@@ -195,7 +203,7 @@ export function ProjectsView() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="mt-5 flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink"
+            className="mt-5 flex cursor-pointer items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             <Plus className="size-4" weight="bold" />
             Create your first project
@@ -229,13 +237,13 @@ export function ProjectsView() {
                     />
                   ) : (
                     <>
-                      {/* Action buttons */}
-                      <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      {/* Action buttons — always visible on touch, hover-revealed on pointer devices */}
+                      <div className="absolute right-3 top-3 flex items-center gap-1 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
                         <button
                           type="button"
                           onClick={() => setEditingId(project.id)}
                           aria-label="Edit project"
-                          className="grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm hover:text-muted"
+                          className="grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm transition-colors hover:text-muted active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                         >
                           <DotsThree className="size-4" weight="bold" />
                         </button>
@@ -247,7 +255,7 @@ export function ProjectsView() {
                               ? "Confirm delete"
                               : "Delete project"
                           }
-                          className={`grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors ${
+                          className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 ${
                             confirmDelete === project.id
                               ? "border-red-500/40 text-red-400"
                               : "text-faint hover:text-red-400"
@@ -337,7 +345,7 @@ export function ProjectsView() {
       {/* AI assistant CTA */}
       <Link
         href="/assistant"
-        className="group flex items-center justify-between gap-4 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/[0.08] to-surface p-5 transition-colors hover:border-accent/40"
+        className="group flex items-center justify-between gap-4 rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/[0.08] to-surface p-5 transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
         <div className="flex items-center gap-4">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-accent-ink">
@@ -353,6 +361,7 @@ export function ProjectsView() {
             </p>
           </div>
         </div>
+        <ArrowRight className="size-5 shrink-0 text-muted transition-transform group-hover:translate-x-1" />
       </Link>
     </div>
   );
@@ -400,8 +409,9 @@ function ProjectEditForm({
             key={c}
             type="button"
             onClick={() => setColor(c)}
-            aria-label={c}
-            className={`size-4 rounded-full ${PROJECT_COLORS[c].dot} ${color === c ? "ring-2 ring-offset-1 ring-offset-surface ring-white/20 scale-110" : "opacity-50 hover:opacity-80"} transition-all`}
+            aria-label={`Color: ${c}`}
+            aria-pressed={color === c}
+            className={`size-5 cursor-pointer rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 ${PROJECT_COLORS[c].dot} ${color === c ? "scale-125 ring-2 ring-offset-1 ring-offset-surface ring-white/20" : "opacity-50 hover:opacity-80 active:scale-110"}`}
           />
         ))}
       </div>
@@ -409,14 +419,14 @@ function ProjectEditForm({
         <button
           type="button"
           onClick={() => onSave(name.trim() || project.name, desc, color)}
-          className="rounded-lg bg-accent px-2.5 py-1 text-[12px] font-semibold text-accent-ink"
+          className="cursor-pointer rounded-lg bg-accent px-3 py-1.5 text-[12px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           Save
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-line px-2.5 py-1 text-[12px] text-muted hover:text-ink"
+          className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[12px] text-muted transition-colors hover:text-ink active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
         >
           Cancel
         </button>
@@ -512,7 +522,7 @@ function VaultPromptAdder({
               <button
                 type="button"
                 onClick={() => handleAdd(p)}
-                className={`shrink-0 rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                className={`min-h-[36px] cursor-pointer shrink-0 rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                   added === p.id
                     ? "bg-accent/10 text-accent-fg"
                     : "border border-line text-faint hover:text-ink"

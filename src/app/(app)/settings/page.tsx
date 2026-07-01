@@ -36,7 +36,7 @@ export default function SettingsPage() {
               key={t.id}
               onClick={() => setTab(t.id)}
               aria-current={tab === t.id ? "true" : undefined}
-              className={`shrink-0 rounded-lg px-3 py-2 text-left text-[14px] transition-colors ${
+              className={`cursor-pointer shrink-0 rounded-lg px-3 py-2 text-left text-[14px] transition-colors active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 ${
                 tab === t.id
                   ? "bg-surface-2 font-medium text-ink"
                   : "text-muted hover:bg-surface-2 hover:text-ink"
@@ -123,8 +123,9 @@ function BrandSection() {
               <button
                 key={p}
                 type="button"
+                aria-pressed={draft.primaryPlatform === p}
                 onClick={() => setDraft((d) => ({ ...d, primaryPlatform: p }))}
-                className={`rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[13px] transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                   draft.primaryPlatform === p
                     ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
                     : "border-line text-muted hover:border-faint hover:text-ink"
@@ -147,8 +148,9 @@ function BrandSection() {
             <button
               key={v}
               type="button"
+              aria-pressed={draft.voice === v}
               onClick={() => setDraft((d) => ({ ...d, voice: v }))}
-              className={`rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-[13px] transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                 draft.voice === v
                   ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
                   : "border-line text-muted hover:border-faint hover:text-ink"
@@ -172,7 +174,7 @@ function BrandSection() {
         <button
           type="button"
           onClick={handleSave}
-          className="h-11 rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90"
+          className="h-11 cursor-pointer rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           {saved ? (
             <span className="flex items-center gap-2">
@@ -226,7 +228,7 @@ function ProfileSection() {
         <Field label="Email" value={user?.email ?? ""} />
       </div>
       <div className="mt-6">
-        <button className="h-11 rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink hover:bg-[#d6f56b]">
+        <button className="h-11 cursor-pointer rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
           Save changes
         </button>
       </div>
