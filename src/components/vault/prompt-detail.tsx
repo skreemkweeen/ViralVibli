@@ -218,7 +218,7 @@ export function VaultPromptDetail() {
             <button
               type="button"
               onClick={handleSave}
-              className="mt-2 flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-semibold text-black transition-opacity"
+              className="mt-2 flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 cursor-pointer"
             >
               <Check className="size-3.5" weight="bold" />
               Save changes
@@ -261,7 +261,7 @@ export function VaultPromptDetail() {
                 onClick={() => setSelectedOp(op.id)}
                 aria-pressed={selectedOp === op.id}
                 title={op.description}
-                className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                className={`cursor-pointer rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                   selectedOp === op.id
                     ? "bg-accent/[0.12] text-accent-fg ring-1 ring-accent/30"
                     : "bg-bg text-muted hover:text-ink"
@@ -276,10 +276,10 @@ export function VaultPromptDetail() {
           <button
             type="button"
             onClick={transforming ? cancelTransform : handleTransform}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl py-2 text-[13px] font-semibold transition-colors ${
+            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl py-2 text-[13px] font-semibold transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
               transforming
                 ? "border border-line text-muted hover:text-ink"
-                : "bg-accent text-black"
+                : "bg-accent text-accent-ink hover:opacity-90"
             }`}
           >
             {transforming ? (
@@ -310,7 +310,7 @@ export function VaultPromptDetail() {
                   <button
                     type="button"
                     onClick={clearTransformError}
-                    className="shrink-0 text-red-400/60 hover:text-red-400"
+                    className="shrink-0 cursor-pointer rounded text-red-400/60 transition-colors hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
                     aria-label="Dismiss error"
                   >
                     <X className="size-3.5" />
@@ -358,7 +358,7 @@ export function VaultPromptDetail() {
                     <button
                       type="button"
                       onClick={acceptTransform}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent py-2 text-[13px] font-semibold text-black"
+                      className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-accent py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
                     >
                       <Check className="size-3.5" weight="bold" />
                       Apply
@@ -366,7 +366,7 @@ export function VaultPromptDetail() {
                     <button
                       type="button"
                       onClick={rejectTransform}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line py-2 text-[13px] font-medium text-muted hover:text-ink"
+                      className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-line py-2 text-[13px] font-medium text-muted transition-colors hover:text-ink active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
                     >
                       <X className="size-3.5" />
                       Discard

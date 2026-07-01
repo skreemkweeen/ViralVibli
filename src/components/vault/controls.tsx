@@ -125,7 +125,7 @@ export function VaultControls() {
           type="button"
           onClick={handleQuickAdd}
           disabled={!quickText.trim()}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-accent py-2 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
+          className="mt-2 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-accent py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           <Plus className="size-3.5" weight="bold" />
           Save to Vault
@@ -240,7 +240,7 @@ export function VaultControls() {
                 type="button"
                 onClick={handleCreateCollection}
                 disabled={!newCollectionName.trim()}
-                className="shrink-0 rounded-lg bg-accent px-2.5 py-1.5 text-[12px] font-semibold text-black disabled:opacity-40"
+                className="shrink-0 cursor-pointer rounded-lg bg-accent px-2.5 py-1.5 text-[12px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               >
                 Add
               </button>
