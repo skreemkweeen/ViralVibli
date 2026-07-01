@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { CommandPalette } from "./command-palette";
+import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileNav, setMobileNav] = useState(false);
@@ -45,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <WelcomeModal />
     </div>
   );
 }

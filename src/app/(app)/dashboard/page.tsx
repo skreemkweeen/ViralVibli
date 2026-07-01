@@ -21,7 +21,7 @@ function timeAgo(ts: number): string {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { projects, activity, hydrated } = useWorkspace();
+  const { projects, activity, hydrated, loadDemo } = useWorkspace();
   const [vaultCount, setVaultCount] = useState(0);
   const firstName = user?.name?.split(" ")[0] ?? "creator";
 
@@ -150,20 +150,33 @@ export default function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-4 rounded-2xl border border-line border-dashed bg-surface/50 p-6">
+            <div className="flex flex-col gap-4 rounded-2xl border border-line border-dashed bg-surface/50 p-6 sm:flex-row sm:items-center">
               <FolderSimple className="size-8 shrink-0 text-faint" />
-              <div>
-                <p className="text-[14px] font-medium text-ink">No projects yet</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-medium text-ink">
+                  Projects group work into a story
+                </p>
                 <p className="mt-0.5 text-[13px] text-muted">
-                  Group your stories, prompts, and assets into campaigns.
+                  A project holds stories, prompts, and generated assets from
+                  every studio. Start blank, or load the demo to see how a
+                  weathered workspace looks.
                 </p>
               </div>
-              <Link
-                href="/projects"
-                className="ml-auto shrink-0 rounded-xl border border-line px-3.5 py-2 text-[13px] text-muted transition-colors hover:text-ink"
-              >
-                Create one
-              </Link>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <Link
+                  href="/projects"
+                  className="rounded-xl border border-line px-3.5 py-2 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                >
+                  Create one
+                </Link>
+                <button
+                  type="button"
+                  onClick={loadDemo}
+                  className="cursor-pointer rounded-xl bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                >
+                  Load demo
+                </button>
+              </div>
             </div>
           )}
         </section>

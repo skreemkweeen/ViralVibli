@@ -4,16 +4,18 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTheme, type Theme } from "@/components/app/theme-provider";
 import { useWorkspace } from "@/lib/workspace/store";
-import { Check, CheckCircle } from "@phosphor-icons/react";
+import { Check, CheckCircle, Compass, Trash } from "@phosphor-icons/react";
 import { Card as UiCard } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { resetOnboarding } from "@/components/onboarding/welcome-modal";
 
-type Tab = "profile" | "brand" | "appearance" | "notifications" | "billing";
+type Tab = "profile" | "brand" | "workspace" | "appearance" | "notifications" | "billing";
 const tabs: { id: Tab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "brand", label: "Brand & AI" },
+  { id: "workspace", label: "Workspace" },
   { id: "appearance", label: "Appearance" },
   { id: "notifications", label: "Notifications" },
   { id: "billing", label: "Billing" },
@@ -54,6 +56,7 @@ export default function SettingsPage() {
         <div className="min-w-0">
           {tab === "profile" && <ProfileSection />}
           {tab === "brand" && <BrandSection />}
+          {tab === "workspace" && <WorkspaceSection />}
           {tab === "appearance" && <AppearanceSection />}
           {tab === "notifications" && <NotificationsSection />}
           {tab === "billing" && <BillingSection />}
@@ -298,6 +301,82 @@ function Toggle({ defaultOn, label }: { defaultOn: boolean; label: string }) {
         }`}
       />
     </button>
+  );
+}
+
+function WorkspaceSection() {
+  const { loadDemo, clearWorkspace, isEmpty } = useWorkspace();
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [demoLoaded, setDemoLoaded] = useState(false);
+
+  function handleDemo(): void {
+    loadDemo();
+    setDemoLoaded(true);
+    setTimeout(() => setDemoLoaded(false), 2000);
+  }
+
+  function handleClear(): void {
+    if (confirmClear) {
+      clearWorkspace();
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <UiCard padding="lg">
+        <h2 className="text-[15px] font-medium text-ink">Demo workspace</h2>
+        <p className="mt-1 text-[13px] text-muted">
+          Load a curated set of projects, prompts, and activity so you can
+          explore every studio the way a returning creator would see it.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <Button onClick={handleDemo}>
+            {demoLoaded ? (
+              <>
+                <CheckCircle weight="fill" className="size-4" /> Demo loaded
+              </>
+            ) : (
+              <>
+                <Compass className="size-4" /> Load demo workspace
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={() => {
+              resetOnboarding();
+              window.location.reload();
+            }}
+            variant="ghost"
+          >
+            Replay first-run tour
+          </Button>
+        </div>
+        {!isEmpty && (
+          <p className="mt-3 text-[12px] text-faint">
+            Loading the demo overwrites your current projects, activity, and
+            vault prompts.
+          </p>
+        )}
+      </UiCard>
+
+      <UiCard padding="lg">
+        <h2 className="text-[15px] font-medium text-ink">Danger zone</h2>
+        <p className="mt-1 text-[13px] text-muted">
+          Wipe every project, prompt, and activity item from this browser.
+          Cannot be undone.
+        </p>
+        <div className="mt-5">
+          <Button onClick={handleClear} variant="danger" size="md">
+            <Trash className="size-4" />
+            {confirmClear ? "Click again to confirm" : "Clear workspace"}
+          </Button>
+        </div>
+      </UiCard>
+    </div>
   );
 }
 

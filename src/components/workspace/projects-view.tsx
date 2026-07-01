@@ -39,6 +39,7 @@ export function ProjectsView() {
     createProject,
     updateProject,
     deleteProject,
+    loadDemo,
   } = useWorkspace();
   const reduce = useReducedMotion();
 
@@ -187,19 +188,32 @@ export function ProjectsView() {
 
       {/* Projects grid */}
       {projects.length === 0 && !creating ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-line border-dashed bg-surface/50 py-16 text-center">
-          <FolderSimple className="size-10 text-faint" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-line border-dashed bg-surface/50 px-6 py-16 text-center">
+          <span className="grid size-14 place-items-center rounded-2xl border border-line bg-surface-2 text-faint">
+            <FolderSimple className="size-6" />
+          </span>
           <p className="mt-4 text-[15px] font-medium text-ink">
-            No projects yet
+            Group stories, prompts, and assets into one project
           </p>
-          <p className="mt-1 text-[14px] text-muted">
-            Create a project to organize stories, prompts, and generated assets
-            into one workflow.
+          <p className="mt-1 max-w-md text-[14px] text-muted">
+            Projects are how creators keep a campaign, launch, or content week
+            together. Every studio can drop work into a project so the AI
+            assistant sees the whole picture.
           </p>
-          <Button onClick={() => setCreating(true)} className="mt-5">
-            <Plus className="size-4" weight="bold" />
-            Create your first project
-          </Button>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="size-4" weight="bold" />
+              Create your first project
+            </Button>
+            <Button onClick={loadDemo} variant="ghost">
+              <Sparkle className="size-4" weight="fill" />
+              Load demo workspace
+            </Button>
+          </div>
+          <p className="mt-3 text-[11.5px] text-faint">
+            Demo loads sample projects, prompts, and activity you can edit
+            freely.
+          </p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

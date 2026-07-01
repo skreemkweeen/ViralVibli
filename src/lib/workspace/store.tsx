@@ -17,11 +17,13 @@ import type {
   ActivityType,
 } from "./types";
 import { PROJECT_COLORS_LIST, DEFAULT_CREATOR_PROFILE } from "./types";
+import { buildDemoWorkspace } from "./seed";
 
 const KEY = {
   profile: "vv-workspace-profile",
   projects: "vv-workspace-projects",
   activity: "vv-workspace-activity",
+  vaultPrompts: "vv-vault-prompts",
 };
 
 let n = 0;
@@ -51,6 +53,7 @@ type WorkspaceState = {
   projects: Project[];
   activity: ActivityItem[];
   hydrated: boolean;
+  isEmpty: boolean;
   updateProfile: (patch: Partial<CreatorProfile>) => void;
   createProject: (
     name: string,
@@ -70,6 +73,10 @@ type WorkspaceState = {
     moduleId: string,
     href?: string,
   ) => void;
+  /** Populate the workspace with a curated demo dataset. Overwrites existing data. */
+  loadDemo: () => void;
+  /** Wipe every workspace slice back to blank. */
+  clearWorkspace: () => void;
 };
 
 const WorkspaceCtx = createContext<WorkspaceState | null>(null);
@@ -221,12 +228,37 @@ export function WorkspaceProvider({
     [],
   );
 
+  const loadDemo = useCallback(() => {
+    const demo = buildDemoWorkspace();
+    setProfile(demo.profile);
+    setProjects(demo.projects);
+    setActivity(demo.activity);
+    // Vault prompts live in a separate localStorage key that the vault store
+    // reads on hydrate; seed it directly so the vault route sees the sample
+    // library too.
+    persist(KEY.vaultPrompts, demo.vaultPrompts);
+  }, []);
+
+  const clearWorkspace = useCallback(() => {
+    setProfile(DEFAULT_CREATOR_PROFILE);
+    setProjects([]);
+    setActivity([]);
+    persist(KEY.vaultPrompts, []);
+  }, []);
+
+  const isEmpty =
+    hydrated &&
+    projects.length === 0 &&
+    activity.length === 0 &&
+    profile.brand === DEFAULT_CREATOR_PROFILE.brand;
+
   const value = useMemo<WorkspaceState>(
     () => ({
       profile,
       projects,
       activity,
       hydrated,
+      isEmpty,
       updateProfile,
       createProject,
       updateProject,
@@ -234,12 +266,15 @@ export function WorkspaceProvider({
       addItemToProject,
       removeItemFromProject,
       recordActivity,
+      loadDemo,
+      clearWorkspace,
     }),
     [
       profile,
       projects,
       activity,
       hydrated,
+      isEmpty,
       updateProfile,
       createProject,
       updateProject,
@@ -247,6 +282,8 @@ export function WorkspaceProvider({
       addItemToProject,
       removeItemFromProject,
       recordActivity,
+      loadDemo,
+      clearWorkspace,
     ],
   );
 
