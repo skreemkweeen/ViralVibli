@@ -104,13 +104,13 @@ export function PromptCard({
         </div>
       )}
 
-      {/* Hover action bar */}
-      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+      {/* Action bar — always visible on touch, hover-revealed on pointer devices */}
+      <div className="absolute right-2 top-2 flex items-center gap-1 transition-opacity group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
         <button
           type="button"
           onClick={handleCopy}
           aria-label="Copy prompt"
-          className="grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm transition-colors hover:text-muted"
+          className="grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm transition-colors hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
         >
           {copied ? (
             <motion.span
@@ -129,7 +129,7 @@ export function PromptCard({
           onClick={handleFavorite}
           aria-label={prompt.favorite ? "Remove from favorites" : "Add to favorites"}
           aria-pressed={prompt.favorite}
-          className={`grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors ${
+          className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
             prompt.favorite ? "text-accent-fg" : "text-faint hover:text-muted"
           }`}
         >
@@ -140,7 +140,7 @@ export function PromptCard({
           onClick={handlePin}
           aria-label={prompt.pinned ? "Unpin" : "Pin prompt"}
           aria-pressed={prompt.pinned}
-          className={`grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors ${
+          className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
             prompt.pinned ? "text-accent-fg" : "text-faint hover:text-muted"
           }`}
         >
@@ -150,7 +150,7 @@ export function PromptCard({
           type="button"
           onClick={(e) => { e.stopPropagation(); onSelect(); }}
           aria-label="Open prompt"
-          className="grid size-7 place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm transition-colors hover:text-muted"
+          className="grid size-8 cursor-pointer place-items-center rounded-lg border border-line/60 bg-surface/90 text-faint backdrop-blur-sm transition-colors hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
         >
           <ArrowSquareOut className="size-3.5" />
         </button>

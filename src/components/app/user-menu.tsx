@@ -29,10 +29,11 @@ export function UserMenu() {
   return (
     <div ref={ref} className="relative ml-1">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Account menu"
         aria-expanded={open}
-        className="grid size-9 place-items-center rounded-full bg-accent text-[13px] font-semibold text-accent-ink ring-2 ring-transparent transition-all hover:ring-line"
+        className="grid size-9 cursor-pointer place-items-center rounded-full bg-accent text-[13px] font-semibold text-accent-ink ring-2 ring-transparent transition-all hover:ring-line focus-visible:outline-none focus-visible:ring-accent/50"
       >
         {user?.initials ?? "VV"}
       </button>
@@ -67,11 +68,12 @@ export function UserMenu() {
             </div>
             <div className="border-t border-line-soft p-1.5">
               <button
+                type="button"
                 onClick={() => {
                   signOut();
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[14px] text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left text-[14px] text-muted transition-colors hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
               >
                 <SignOut className="size-[18px] text-faint" />
                 Sign out
@@ -96,7 +98,7 @@ function MenuLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-muted transition-colors hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
     >
       <span className="text-faint">{icon}</span>
       {children}

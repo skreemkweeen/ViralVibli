@@ -63,10 +63,11 @@ export function Notifications() {
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
-        className="relative grid size-9 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink"
+        className="relative grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
         <Bell className="size-[18px]" />
         {unread > 0 && (
@@ -87,7 +88,10 @@ export function Notifications() {
               <span className="text-[14px] font-medium text-ink">
                 Notifications
               </span>
-              <button className="text-[12px] text-accent-fg hover:underline">
+              <button
+                type="button"
+                className="cursor-pointer rounded text-[12px] text-accent-fg transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+              >
                 Mark all read
               </button>
             </div>
