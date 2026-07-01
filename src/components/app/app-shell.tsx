@@ -1,21 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { CommandPalette } from "./command-palette";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
+import { AIDock, AIDockTrigger } from "@/components/ai/ai-dock";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(false);
+  const pathname = usePathname();
 
-  // global command palette shortcut
+  // Hide the floating AI trigger on the assistant route itself — it would
+  // duplicate the full-page assistant surface.
+  const showDockTrigger = !pathname.startsWith("/assistant");
+
+  // Global keyboard shortcuts: ⌘K palette, ⌘J AI dock
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
+      } else if (key === "j") {
+        e.preventDefault();
+        setDockOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -47,6 +61,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <WelcomeModal />
+      {showDockTrigger && !dockOpen && (
+        <AIDockTrigger onClick={() => setDockOpen(true)} />
+      )}
+      <AIDock open={dockOpen} onOpenChange={setDockOpen} />
     </div>
   );
 }
