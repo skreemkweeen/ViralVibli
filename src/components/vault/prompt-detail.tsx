@@ -25,6 +25,7 @@ import type {
   TransformOp,
 } from "@/lib/vault/types";
 import { extractVariables } from "@/lib/vault/variables";
+import { VariableFiller } from "./variable-filler";
 
 export function VaultPromptDetail() {
   const {
@@ -327,10 +328,14 @@ export function VaultPromptDetail() {
               ))}
             </div>
             <p className="mt-1.5 text-[11px] text-faint">
-              Use these tokens as slots the AI fills at runtime.
+              Use these tokens as slots. Fill them below to preview and copy
+              the ready-to-run prompt.
             </p>
           </div>
         )}
+
+        {/* Live variable filler — appears only when the prompt has variables */}
+        <VariableFiller content={editContent} variables={variables} />
 
         {/* Tags editor */}
         <div className="mb-4">
