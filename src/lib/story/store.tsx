@@ -103,6 +103,17 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     setHistory(load<StoryHistoryEntry[]>(KEY.history, []));
     setCollections(load<StudioCollection[]>(KEY.collections, []));
     setSaved(load<StorySaved[]>(KEY.saved, []));
+    // Command-palette handoff: if the palette routed here with a subject,
+    // apply it once and clear the key so subsequent visits stay pristine.
+    try {
+      const prefill = localStorage.getItem("vv-story-prefill");
+      if (prefill && prefill.trim()) {
+        setDirection((d) => ({ ...d, subject: prefill.trim() }));
+        localStorage.removeItem("vv-story-prefill");
+      }
+    } catch {
+      // storage unavailable
+    }
     setHydrated(true);
   }, []);
 

@@ -182,6 +182,17 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     );
     setSaved(load<SavedPrompt[]>(KEY.saved, []));
     setMoodboard(load<MoodboardItem[]>(KEY.moodboard, []));
+    // Command-palette handoff: if the palette routed here with a subject,
+    // apply it once and clear the key so subsequent visits stay pristine.
+    try {
+      const prefill = localStorage.getItem("vv-vision-prefill");
+      if (prefill && prefill.trim()) {
+        setDirection((d) => ({ ...d, subject: prefill.trim() }));
+        localStorage.removeItem("vv-vision-prefill");
+      }
+    } catch {
+      // storage unavailable
+    }
     setHydrated(true);
   }, []);
 

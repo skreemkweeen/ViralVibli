@@ -19,6 +19,7 @@ import { openAIDock } from "./app-shell";
 import { useWorkspace } from "@/lib/workspace/store";
 import type { ProjectColor } from "@/lib/workspace/types";
 import { PROJECT_COLORS } from "@/lib/workspace/types";
+import { routeIntents, type StudioId } from "@/lib/palette/route-intent";
 
 type SearchItem = {
   id: string;
@@ -52,6 +53,28 @@ function ProjectDot({ color }: { color: ProjectColor }) {
       className={`size-2 rounded-full ${PROJECT_COLORS[color].dot} opacity-80`}
     />
   );
+}
+
+const STUDIO_PREFILL_KEY: Record<StudioId, string | null> = {
+  story: "vv-story-prefill",
+  vision: "vv-vision-prefill",
+  vault: "vv-vault-prefill",
+  assistant: "vv-assistant-prefill",
+  projects: null,
+};
+
+function studioIcon(studio: StudioId): React.ReactNode {
+  const map: Record<StudioId, string> = {
+    story: "story",
+    vision: "vision",
+    vault: "prompts",
+    assistant: "assistant",
+    projects: "assistant",
+  };
+  const mod = appModules.find((m) => m.id === map[studio]);
+  if (!mod) return <Sparkle className="size-[18px]" weight="fill" />;
+  const Icon = mod.icon as Icon;
+  return <Icon className="size-[18px]" weight="fill" />;
 }
 
 export function CommandPalette({
@@ -181,9 +204,40 @@ export function CommandPalette({
     const filter = (items: SearchItem[]) =>
       q ? items.filter((i) => fuzzy(i.label + " " + (i.sublabel ?? ""), q)) : items;
 
-    const build: SearchSection[] = [
-      { id: "nav", label: "Navigate", items: filter(navItems) },
-    ];
+    const build: SearchSection[] = [];
+
+    // Natural-language routing: turn "generate a launch caption" into a
+    // one-Enter jump into Story Studio with the subject prefilled. Shown at
+    // the top so intent-shaped queries collapse to a single Enter press.
+    const intents = q ? routeIntents(q) : [];
+    if (intents.length > 0) {
+      build.push({
+        id: "routes",
+        label: "Route to",
+        items: intents.map((intent, i) => ({
+          id: `intent-${intent.studio}-${i}`,
+          label: intent.label,
+          sublabel: intent.subject
+            ? `${intent.hint} — subject: “${intent.subject}”`
+            : intent.hint,
+          icon: studioIcon(intent.studio),
+          run: () => {
+            const key = STUDIO_PREFILL_KEY[intent.studio];
+            if (key && intent.subject) {
+              try {
+                localStorage.setItem(key, intent.subject);
+              } catch {
+                // storage unavailable
+              }
+            }
+            router.push(intent.href);
+            onClose();
+          },
+        })),
+      });
+    }
+
+    build.push({ id: "nav", label: "Navigate", items: filter(navItems) });
 
     if (projectItems.length > 0) {
       const filtered = filter(projectItems);
@@ -390,12 +444,17 @@ export function CommandPalette({
               <p className="text-[11px] text-faint">
                 ↑↓ navigate · ↵ open · Esc close
               </p>
-              {query.split(" ").length >= 2 && (
+              {sections[0]?.id === "routes" ? (
+                <p className="text-[11px] text-faint">
+                  <ArrowRight className="mr-1 inline size-3" weight="bold" />
+                  Enter routes to studio with subject
+                </p>
+              ) : query.split(" ").length >= 2 ? (
                 <p className="text-[11px] text-faint">
                   <Sparkle className="mr-1 inline size-3" weight="fill" />
                   Enter to ask the AI Dock in place
                 </p>
-              )}
+              ) : null}
             </div>
           </motion.div>
         </motion.div>
