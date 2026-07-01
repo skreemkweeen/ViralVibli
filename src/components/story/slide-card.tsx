@@ -11,9 +11,11 @@ import {
   ArrowsOutCardinal,
   FilmSlate,
   CheckCircle,
+  Sparkle,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import type { StorySlide } from "@/lib/ai/types";
+import { SlideTransformer } from "./slide-transformer";
 
 type SlideCardProps = {
   slide: StorySlide;
@@ -22,6 +24,12 @@ type SlideCardProps = {
   onDuplicate?: () => void;
   onRemove?: () => void;
   draggable?: boolean;
+  /**
+   * When both are provided, per-slide AI actions become available. Without
+   * them the slide is read-only (e.g. inside phone preview mode).
+   */
+  conceptId?: string;
+  slideIndex?: number;
 };
 
 function copyToClipboard(text: string) {
@@ -35,10 +43,14 @@ export function SlideCard({
   onDuplicate,
   onRemove,
   draggable = false,
+  conceptId,
+  slideIndex,
 }: SlideCardProps) {
   const [showNotes, setShowNotes] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [transformerOpen, setTransformerOpen] = useState(false);
   const reduce = useReducedMotion();
+  const canTransform = Boolean(conceptId && slideIndex !== undefined);
 
   const handleCopy = useCallback(() => {
     copyToClipboard(slide.copy);
@@ -91,6 +103,22 @@ export function SlideCard({
             <Copy className="size-3.5" />
           )}
         </button>
+        {canTransform && (
+          <button
+            type="button"
+            onClick={() => setTransformerOpen((v) => !v)}
+            aria-label={transformerOpen ? "Hide AI actions" : "Open AI actions"}
+            aria-pressed={transformerOpen}
+            title="AI actions"
+            className={`grid size-7 cursor-pointer place-items-center rounded-lg border backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+              transformerOpen
+                ? "border-accent/50 bg-accent/10 text-accent-fg"
+                : "border-line/60 bg-surface/80 text-faint hover:text-accent-fg"
+            }`}
+          >
+            <Sparkle className="size-3.5" weight={transformerOpen ? "fill" : "regular"} />
+          </button>
+        )}
         {onToggleFavorite && (
           <button
             type="button"
@@ -196,6 +224,19 @@ export function SlideCard({
             )}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Slide-level AI transformer — mounted only when the parent supplies
+          a concept ID + slide index (Sequence view). Read-only surfaces
+          like phone preview never opt in. */}
+      {canTransform && (
+        <SlideTransformer
+          conceptId={conceptId!}
+          slideIndex={slideIndex!}
+          currentCopy={slide.copy}
+          open={transformerOpen}
+          onOpenChange={setTransformerOpen}
+        />
       )}
     </motion.article>
   );

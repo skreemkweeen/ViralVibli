@@ -131,6 +131,8 @@ function ConceptBlock({ concept }: { concept: StoryConcept }) {
                     key={i}
                     slide={slide}
                     draggable
+                    conceptId={concept.id}
+                    slideIndex={i}
                   />
                 ))}
               </div>

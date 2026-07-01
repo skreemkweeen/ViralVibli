@@ -68,6 +68,8 @@ type StoryState = {
   assignCollection: (id: string, collectionId: string | null) => void;
   duplicateConcept: (id: string) => void;
   renameConcept: (id: string, label: string) => void;
+  /** Overwrite a single slide's copy inside a concept. */
+  updateSlideCopy: (conceptId: string, slideIndex: number, copy: string) => void;
 
   history: StoryHistoryEntry[];
   restore: (entry: StoryHistoryEntry) => void;
@@ -234,6 +236,23 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const updateSlideCopy = useCallback(
+    (conceptId: string, slideIndex: number, copy: string) => {
+      const trimmed = copy.trim();
+      if (!trimmed) return;
+      setConcepts((c) =>
+        c.map((concept) => {
+          if (concept.id !== conceptId) return concept;
+          const slides = concept.slides.map((s, i) =>
+            i === slideIndex ? { ...s, copy: trimmed } : s,
+          );
+          return { ...concept, slides };
+        }),
+      );
+    },
+    [],
+  );
+
   const restore = useCallback(
     (entry: StoryHistoryEntry) => setDirection(entry.direction),
     [],
@@ -288,6 +307,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
       assignCollection,
       duplicateConcept,
       renameConcept,
+      updateSlideCopy,
       history,
       restore,
       clearHistory,
@@ -315,6 +335,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
       assignCollection,
       duplicateConcept,
       renameConcept,
+      updateSlideCopy,
       history,
       restore,
       clearHistory,
