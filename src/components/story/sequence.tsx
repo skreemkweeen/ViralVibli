@@ -17,6 +17,7 @@ import { getFramework } from "@/lib/story/frameworks";
 import { platforms, optionLabel } from "@/lib/story/data";
 import { StoryPhonePreview } from "./phone-preview";
 import { StoryInsightsBar } from "./insights-bar";
+import { StoryEngagementPredictions } from "./engagement-predictions";
 
 type ConceptHeaderProps = {
   concept: StoryConcept;
@@ -107,6 +108,7 @@ function ConceptBlock({ concept }: { concept: StoryConcept }) {
         onPreview={() => setPreviewOpen(true)}
       />
       <StoryInsightsBar concept={concept} />
+      <StoryEngagementPredictions concept={concept} />
       <StoryPhonePreview
         concept={concept}
         open={previewOpen}

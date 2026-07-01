@@ -251,3 +251,124 @@ export const INSIGHT_METRICS: InsightMetric[] = [
   "retention",
   "sales",
 ];
+
+// ─── Engagement predictions ───────────────────────────────────────────────────
+//
+// Estimates that ride on top of the same psychology scores. Every value is a
+// range { low, expected, high } to make the uncertainty visible; the units
+// depend on the metric:
+//
+//   replies         – expected direct-message replies per 1k reach
+//   retention       – % of viewers who reach the last slide (0..100)
+//   completionRate  – % of viewers who watch every slide fully (0..100)
+//   clicks          – expected link-in-bio taps per 1k reach
+//   shares          – expected share taps per 1k reach
+//
+// We DO NOT claim clairvoyance — these are heuristic estimates surfaced with
+// visible ranges so the creator reads them as directional guidance, not truth.
+
+export type PredictionMetric =
+  | "replies"
+  | "retention"
+  | "completionRate"
+  | "clicks"
+  | "shares";
+
+export type PredictionRange = {
+  low: number;
+  expected: number;
+  high: number;
+};
+
+export type EngagementPredictions = Record<PredictionMetric, PredictionRange>;
+
+export const PREDICTION_LABELS: Record<PredictionMetric, string> = {
+  replies: "Replies",
+  retention: "Retention",
+  completionRate: "Completion",
+  clicks: "Clicks",
+  shares: "Shares",
+};
+
+/** Per-metric display unit — the label rendered after the number. */
+export const PREDICTION_UNITS: Record<PredictionMetric, string> = {
+  replies: "/1k",
+  retention: "%",
+  completionRate: "%",
+  clicks: "/1k",
+  shares: "/1k",
+};
+
+export const PREDICTION_METRICS: PredictionMetric[] = [
+  "replies",
+  "retention",
+  "completionRate",
+  "clicks",
+  "shares",
+];
+
+const CLAMPS: Record<PredictionMetric, { min: number; max: number }> = {
+  replies: { min: 0, max: 120 },
+  retention: { min: 0, max: 100 },
+  completionRate: { min: 0, max: 100 },
+  clicks: { min: 0, max: 90 },
+  shares: { min: 0, max: 80 },
+};
+
+function range(expected: number, spread: number, kind: PredictionMetric): PredictionRange {
+  const { min, max } = CLAMPS[kind];
+  const clamp = (n: number) => Math.max(min, Math.min(max, Math.round(n)));
+  return {
+    low: clamp(expected - spread),
+    expected: clamp(expected),
+    high: clamp(expected + spread),
+  };
+}
+
+/**
+ * Predict engagement from the underlying Psychology Insights. Deterministic —
+ * given the same insights, always returns the same numbers.
+ */
+export function predictEngagement(insights: Insights): EngagementPredictions {
+  const {
+    curiosity,
+    authority,
+    trust,
+    emotion,
+    urgency,
+    retention,
+    sales,
+  } = insights;
+
+  // Replies scale with curiosity + emotion (people reply when they feel
+  // something and they're being asked). Trust nudges willingness to respond.
+  const repliesExpected =
+    curiosity * 0.35 + emotion * 0.4 + trust * 0.15 + 4;
+
+  // Retention (%) — reuses the retention psychology metric as its anchor but
+  // pushes toward the high end when curiosity + emotion carry the story.
+  const retentionExpected =
+    retention * 0.6 + curiosity * 0.15 + emotion * 0.15 + 10;
+
+  // Completion rate is more punishing than retention — a story is completed
+  // only when every slide holds. Weight retention + authority (structure).
+  const completionExpected =
+    retention * 0.5 + authority * 0.2 + trust * 0.1 + 8;
+
+  // Clicks track sales + urgency very directly.
+  const clicksExpected =
+    sales * 0.45 + urgency * 0.3 + emotion * 0.1 + 2;
+
+  // Shares track emotion + authority (worth-sharing content is either
+  // emotionally resonant or feels genuinely informative).
+  const sharesExpected =
+    emotion * 0.4 + authority * 0.25 + curiosity * 0.15 + 1;
+
+  return {
+    replies: range(repliesExpected, Math.max(4, repliesExpected * 0.25), "replies"),
+    retention: range(retentionExpected, Math.max(6, retentionExpected * 0.18), "retention"),
+    completionRate: range(completionExpected, Math.max(6, completionExpected * 0.22), "completionRate"),
+    clicks: range(clicksExpected, Math.max(3, clicksExpected * 0.3), "clicks"),
+    shares: range(sharesExpected, Math.max(2, sharesExpected * 0.3), "shares"),
+  };
+}
