@@ -87,7 +87,8 @@ export function VaultControls() {
       key={label}
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition-colors ${
+      aria-pressed={active}
+      className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
         active
           ? "bg-accent/[0.08] text-accent-fg"
           : "text-muted hover:bg-surface-2 hover:text-ink"
@@ -183,7 +184,8 @@ export function VaultControls() {
                       scope: "all",
                     })
                   }
-                  className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-left transition-colors ${
+                  aria-pressed={active}
+                  className={`flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                     active
                       ? "bg-accent/[0.08] text-accent-fg"
                       : "text-muted hover:bg-surface-2 hover:text-ink"

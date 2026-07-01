@@ -53,7 +53,7 @@ function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove }: Conc
           onClick={onFavorite}
           aria-label={concept.favorite ? "Remove from favorites" : "Add to favorites"}
           aria-pressed={concept.favorite}
-          className={`grid size-7 place-items-center rounded-lg border border-line transition-colors hover:border-faint ${
+          className={`grid size-8 cursor-pointer place-items-center rounded-lg border border-line transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
             concept.favorite ? "text-accent-fg" : "text-faint"
           }`}
         >
@@ -63,7 +63,7 @@ function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove }: Conc
           type="button"
           onClick={onRemove}
           aria-label="Delete sequence"
-          className="grid size-7 place-items-center rounded-lg border border-line text-faint transition-colors hover:border-faint hover:text-red-400"
+          className="grid size-8 cursor-pointer place-items-center rounded-lg border border-line text-faint transition-colors hover:border-faint hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
         >
           <X className="size-3.5" />
         </button>
@@ -148,7 +148,7 @@ export function StorySequence() {
           <button
             type="button"
             onClick={cancelGeneration}
-            className="rounded-lg border border-line bg-surface px-4 py-2 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink"
+            className="cursor-pointer rounded-lg border border-line bg-surface px-4 py-2 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
           >
             Cancel
           </button>

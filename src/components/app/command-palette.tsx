@@ -305,12 +305,13 @@ export function CommandPalette({
                     No results for &ldquo;{query}&rdquo;
                   </p>
                   <button
+                    type="button"
                     onClick={() => {
                       try { localStorage.setItem("vv-assistant-prefill", query); } catch { /* storage unavailable */ }
                       router.push("/assistant");
                       onClose();
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink"
+                    className="flex cursor-pointer items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                   >
                     <Sparkle className="size-4" weight="fill" />
                     Ask AI instead
@@ -332,9 +333,10 @@ export function CommandPalette({
                       return (
                         <button
                           key={item.id}
+                          type="button"
                           onMouseMove={() => setActiveIndex(idx)}
                           onClick={item.run}
-                          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                          className={`flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                             active ? "bg-surface-2" : ""
                           }`}
                         >
