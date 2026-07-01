@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import type { WorkspaceContext } from "@/lib/context/workspace";
+import { logger, reporter } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -136,6 +137,12 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(context);
 
+  logger.info("assistant.stream.start", {
+    messages: messages.length,
+    chars: totalChars,
+    hasContext: Boolean(context?.brand),
+  });
+
   let anthropicRes: Response;
   try {
     anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -154,11 +161,15 @@ export async function POST(req: NextRequest) {
       }),
       signal: req.signal,
     });
-  } catch {
+  } catch (err) {
+    reporter.captureException(err, { where: "assistant.chat.fetch" });
     return localStream(messages, req.signal);
   }
 
   if (!anthropicRes.ok || !anthropicRes.body) {
+    logger.warn("assistant.stream.upstream_fallback", {
+      status: anthropicRes.status,
+    });
     return localStream(messages, req.signal);
   }
 
