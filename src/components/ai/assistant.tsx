@@ -16,12 +16,14 @@ import {
 } from "@/lib/ai/client";
 import { useWorkspaceContext } from "@/lib/context/workspace";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { useWorkspace } from "@/lib/workspace/store";
 
 let counter = 0;
 const uid = () => `m${++counter}-${Date.now()}`;
 
 export function Assistant() {
   const { user } = useAuth();
+  const { profile, recordActivity } = useWorkspace();
   const reduce = useReducedMotion();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -31,10 +33,24 @@ export function Assistant() {
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Pick up prefill from command palette "Ask AI" flow
+  useEffect(() => {
+    try {
+      const prefill = localStorage.getItem("vv-assistant-prefill");
+      if (prefill) {
+        localStorage.removeItem("vv-assistant-prefill");
+        setInput(prefill);
+        textareaRef.current?.focus();
+      }
+    } catch {
+      // storage unavailable
+    }
+  }, []);
+
   const context = useWorkspaceContext(
     user?.name,
-    user?.name ?? "your brand",
-    "calm, warm",
+    profile.brand !== "Your Brand" ? profile.brand : (user?.name ?? "your brand"),
+    profile.voice,
   );
 
   useEffect(() => {
@@ -68,6 +84,9 @@ export function Assistant() {
       // Snapshot messages before adding the placeholder
       const historyForApi = [...messages, userMsg];
 
+      // Record activity
+      recordActivity("chat-sent", trimmed.slice(0, 60), "assistant", "/assistant");
+
       try {
         for await (const chunk of streamAssistantReply(
           historyForApi,
@@ -94,7 +113,7 @@ export function Assistant() {
         setBusy(false);
       }
     },
-    [busy, messages, context],
+    [busy, messages, context, recordActivity],
   );
 
   const stop = useCallback(() => {

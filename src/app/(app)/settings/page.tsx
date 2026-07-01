@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useTheme, type Theme } from "@/components/app/theme-provider";
-import { Check } from "@phosphor-icons/react";
+import { useWorkspace } from "@/lib/workspace/store";
+import { Check, CheckCircle } from "@phosphor-icons/react";
 
-type Tab = "profile" | "appearance" | "notifications" | "billing";
+type Tab = "profile" | "brand" | "appearance" | "notifications" | "billing";
 const tabs: { id: Tab; label: string }[] = [
   { id: "profile", label: "Profile" },
+  { id: "brand", label: "Brand & AI" },
   { id: "appearance", label: "Appearance" },
   { id: "notifications", label: "Notifications" },
   { id: "billing", label: "Billing" },
@@ -47,10 +49,142 @@ export default function SettingsPage() {
 
         <div className="min-w-0">
           {tab === "profile" && <ProfileSection />}
+          {tab === "brand" && <BrandSection />}
           {tab === "appearance" && <AppearanceSection />}
           {tab === "notifications" && <NotificationsSection />}
           {tab === "billing" && <BillingSection />}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const VOICE_PRESETS = [
+  "calm, warm",
+  "bold, direct",
+  "playful, energetic",
+  "professional, polished",
+  "witty, conversational",
+  "aspirational, inspiring",
+];
+
+const PLATFORM_OPTIONS = [
+  "Instagram",
+  "TikTok",
+  "YouTube",
+  "LinkedIn",
+  "Twitter / X",
+  "Pinterest",
+];
+
+function BrandSection() {
+  const { profile, updateProfile } = useWorkspace();
+  const [saved, setSaved] = useState(false);
+  const [draft, setDraft] = useState({ ...profile });
+
+  const handleSave = () => {
+    updateProfile(draft);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <h2 className="text-[15px] font-medium text-ink">Brand Identity</h2>
+        <p className="mt-1 text-[13px] text-muted">
+          The AI Assistant uses this to match your voice and brand in every
+          response.
+        </p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] text-muted">Brand name</span>
+            <input
+              value={draft.brand}
+              onChange={(e) => setDraft((d) => ({ ...d, brand: e.target.value }))}
+              placeholder="Your Brand"
+              className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[13px] text-muted">Tagline</span>
+            <input
+              value={draft.tagline ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, tagline: e.target.value }))}
+              placeholder="What you stand for"
+              className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
+            />
+          </label>
+        </div>
+        <div className="mt-4">
+          <span className="mb-2 block text-[13px] text-muted">Primary platform</span>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_OPTIONS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setDraft((d) => ({ ...d, primaryPlatform: p }))}
+                className={`rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+                  draft.primaryPlatform === p
+                    ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
+                    : "border-line text-muted hover:border-faint hover:text-ink"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="text-[15px] font-medium text-ink">Brand Voice</h2>
+        <p className="mt-1 text-[13px] text-muted">
+          How your brand sounds. The assistant writes in this voice.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {VOICE_PRESETS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setDraft((d) => ({ ...d, voice: v }))}
+              className={`rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+                draft.voice === v
+                  ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
+                  : "border-line text-muted hover:border-faint hover:text-ink"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+        <div className="mt-3">
+          <input
+            value={draft.voice}
+            onChange={(e) => setDraft((d) => ({ ...d, voice: e.target.value }))}
+            placeholder="Or describe your own voice..."
+            className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
+          />
+        </div>
+      </Card>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          className="h-11 rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90"
+        >
+          {saved ? (
+            <span className="flex items-center gap-2">
+              <CheckCircle weight="fill" className="size-4" /> Saved
+            </span>
+          ) : (
+            "Save brand settings"
+          )}
+        </button>
+        <p className="text-[12px] text-faint">
+          Changes apply immediately to AI responses.
+        </p>
       </div>
     </div>
   );

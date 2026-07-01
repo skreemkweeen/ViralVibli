@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Gear, CaretUpDown, X } from "@phosphor-icons/react";
+import { House, Gear, CaretUpDown, X, FolderSimple } from "@phosphor-icons/react";
 import {
   appModules,
   groupLabels,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/modules/registry";
 import { Wordmark } from "@/components/site/wordmark";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { useWorkspace } from "@/lib/workspace/store";
 
 const groups: ModuleGroup[] = ["create", "grow", "earn"];
 
@@ -22,6 +23,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { projects } = useWorkspace();
 
   return (
     <>
@@ -78,6 +80,14 @@ export function Sidebar({
             active={pathname === "/dashboard"}
             onNavigate={onClose}
           />
+          <NavItem
+            href="/projects"
+            label="Projects"
+            icon={<FolderSimple className="size-[18px]" />}
+            active={pathname.startsWith("/projects")}
+            badge={projects.length > 0 ? String(projects.length) : undefined}
+            onNavigate={onClose}
+          />
 
           {groups.map((g) => (
             <div key={g} className="mt-6">
@@ -126,6 +136,7 @@ function NavItem({
   icon,
   active,
   soon,
+  badge,
   onNavigate,
 }: {
   href: string;
@@ -133,6 +144,7 @@ function NavItem({
   icon: React.ReactNode;
   active: boolean;
   soon?: boolean;
+  badge?: string;
   onNavigate: () => void;
 }) {
   return (
@@ -153,6 +165,11 @@ function NavItem({
       {soon && (
         <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-faint">
           Soon
+        </span>
+      )}
+      {badge && !soon && (
+        <span className="min-w-[1.1rem] rounded-full bg-surface-2 px-1.5 py-0.5 text-center text-[10px] tabular-nums text-faint">
+          {badge}
         </span>
       )}
     </Link>
