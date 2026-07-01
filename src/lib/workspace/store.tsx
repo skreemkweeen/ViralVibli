@@ -77,6 +77,10 @@ type WorkspaceState = {
   loadDemo: () => void;
   /** Wipe every workspace slice back to blank. */
   clearWorkspace: () => void;
+  /** Clear the activity feed only, leaving projects and profile intact. */
+  clearActivity: () => void;
+  /** Duplicate the given project (or the most-recent one when id is absent). */
+  duplicateProject: (id?: string) => string | null;
 };
 
 const WorkspaceCtx = createContext<WorkspaceState | null>(null);
@@ -246,6 +250,45 @@ export function WorkspaceProvider({
     persist(KEY.vaultPrompts, []);
   }, []);
 
+  const clearActivity = useCallback(() => setActivity([]), []);
+
+  const duplicateProject = useCallback(
+    (id?: string): string | null => {
+      let newId: string | null = null;
+      setProjects((prev) => {
+        const source = id ? prev.find((p) => p.id === id) : prev[0];
+        if (!source) return prev;
+        newId = uid("proj");
+        const clone: Project = {
+          ...source,
+          id: newId,
+          name: `${source.name} (copy)`,
+          items: source.items.map((it) => ({ ...it })),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        return [clone, ...prev];
+      });
+      if (newId) {
+        setActivity((a) =>
+          [
+            {
+              id: uid("act"),
+              type: "project-created" as ActivityType,
+              title: `Duplicated project`,
+              moduleId: "projects",
+              href: "/projects",
+              createdAt: Date.now(),
+            },
+            ...a,
+          ].slice(0, 50),
+        );
+      }
+      return newId;
+    },
+    [],
+  );
+
   const isEmpty =
     hydrated &&
     projects.length === 0 &&
@@ -268,6 +311,8 @@ export function WorkspaceProvider({
       recordActivity,
       loadDemo,
       clearWorkspace,
+      clearActivity,
+      duplicateProject,
     }),
     [
       profile,
@@ -284,6 +329,8 @@ export function WorkspaceProvider({
       recordActivity,
       loadDemo,
       clearWorkspace,
+      clearActivity,
+      duplicateProject,
     ],
   );
 

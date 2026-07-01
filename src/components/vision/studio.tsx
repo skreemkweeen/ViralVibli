@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   SquaresFour,
   Sidebar as SidebarIcon,
@@ -21,6 +21,18 @@ export function VisionStudio() {
   const [composerOpen, setComposerOpen] = useState(true);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
+
+  useEffect(() => {
+    // Command palette handoff: ?moodboard=1 opens the moodboard panel.
+    // Read from window.location directly to avoid a Suspense boundary in a
+    // client-only leaf.
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("moodboard") === "1") setMoodboardOpen(true);
+    } catch {
+      // no-op
+    }
+  }, []);
 
   return (
     <VisionProvider>

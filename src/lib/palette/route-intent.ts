@@ -35,6 +35,7 @@ export type PaletteIntent = {
 };
 
 const VERBS = [
+  // creative verbs
   "generate",
   "create",
   "write",
@@ -45,6 +46,30 @@ const VERBS = [
   "design",
   "compose",
   "sketch",
+  "rewrite",
+  "improve",
+  "polish",
+  "refine",
+  // analytical verbs
+  "analyze",
+  "analyse",
+  "compare",
+  "research",
+  // curation verbs
+  "duplicate",
+  "clone",
+  "organize",
+  "organise",
+  "schedule",
+  "save",
+  "export",
+  // navigation verbs
+  "search",
+  "find",
+  "open",
+  "navigate",
+  "jump",
+  "show",
 ];
 
 type Rule = {
@@ -114,11 +139,19 @@ const RULES: Rule[] = [
   },
   {
     studio: "vault",
-    objects: ["prompt", "prompts"],
-    boosts: ["save", "library", "vault"],
+    objects: ["prompt", "prompts", "collection", "collections", "tag", "tags"],
+    boosts: ["save", "library", "vault", "organize", "organise", "find"],
     label: "Save in Prompt Vault",
     hint: "Prompt library with variables and versions",
     href: "/vault",
+  },
+  {
+    studio: "story",
+    objects: ["month", "week", "content", "calendar", "schedule"],
+    boosts: ["daily", "posting", "editorial"],
+    label: "Plan a content calendar in Story Studio",
+    hint: "Multi-day content plan with framework",
+    href: "/story",
   },
   {
     studio: "projects",
