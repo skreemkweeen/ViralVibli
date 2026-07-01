@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FilmSlate, Heart, MagnifyingGlass, X } from "@phosphor-icons/react";
+import {
+  FilmSlate,
+  Heart,
+  MagnifyingGlass,
+  X,
+  Play,
+} from "@phosphor-icons/react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { SlideCard } from "./slide-card";
 import type { StoryConcept } from "@/lib/story/types";
@@ -9,6 +15,7 @@ import { StudioEmptyState, StudioLoadingState, StudioErrorState } from "@/compon
 import { useStory } from "@/lib/story/store";
 import { getFramework } from "@/lib/story/frameworks";
 import { platforms, optionLabel } from "@/lib/story/data";
+import { StoryPhonePreview } from "./phone-preview";
 
 type ConceptHeaderProps = {
   concept: StoryConcept;
@@ -16,9 +23,10 @@ type ConceptHeaderProps = {
   onToggle: () => void;
   onFavorite: () => void;
   onRemove: () => void;
+  onPreview: () => void;
 };
 
-function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove }: ConceptHeaderProps) {
+function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove, onPreview }: ConceptHeaderProps) {
   const fw = getFramework(concept.direction.framework);
   const platform = optionLabel(platforms, concept.direction.platform) ?? concept.direction.platform;
   const date = new Date(concept.createdAt);
@@ -50,6 +58,15 @@ function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove }: Conc
       <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
+          onClick={onPreview}
+          aria-label="Open phone preview"
+          className="flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12px] font-medium text-muted transition-colors hover:border-accent/40 hover:text-accent-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+        >
+          <Play className="size-3" weight="fill" />
+          Preview
+        </button>
+        <button
+          type="button"
           onClick={onFavorite}
           aria-label={concept.favorite ? "Remove from favorites" : "Add to favorites"}
           aria-pressed={concept.favorite}
@@ -74,6 +91,7 @@ function ConceptHeader({ concept, isOpen, onToggle, onFavorite, onRemove }: Conc
 
 function ConceptBlock({ concept }: { concept: StoryConcept }) {
   const [open, setOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { toggleFavorite, removeConcept } = useStory();
   const reduce = useReducedMotion();
 
@@ -85,6 +103,12 @@ function ConceptBlock({ concept }: { concept: StoryConcept }) {
         onToggle={() => setOpen((v) => !v)}
         onFavorite={() => toggleFavorite(concept.id)}
         onRemove={() => removeConcept(concept.id)}
+        onPreview={() => setPreviewOpen(true)}
+      />
+      <StoryPhonePreview
+        concept={concept}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
       />
 
       <AnimatePresence initial={false}>

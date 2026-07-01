@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { appModules, type Icon } from "@/lib/modules/registry";
 import { useTheme } from "./theme-provider";
+import { openAIDock } from "./app-shell";
 import { useWorkspace } from "@/lib/workspace/store";
 import type { ProjectColor } from "@/lib/workspace/types";
 import { PROJECT_COLORS } from "@/lib/workspace/types";
@@ -200,17 +201,29 @@ export function CommandPalette({
       build.push({ id: "recent", label: "Recent", items: recentItems });
     }
 
-    // Ask AI option — shown when query looks like a phrase/command
+    // Ask AI — shown when query looks like a phrase/command. Two paths:
+    //   1) Send to AI Dock (in place, keeps the user's context)
+    //   2) Send to full Assistant page (opens the dedicated route)
     if (q.split(" ").length >= 2) {
       build.push({
         id: "ai",
         label: "Ask AI",
         items: [
           {
-            id: "ask-ai",
+            id: "ask-dock",
             label: `"${q}"`,
-            sublabel: "Send to AI Assistant",
+            sublabel: "Ask the AI Dock in place · ⌘J",
             icon: <Sparkle className="size-[18px]" weight="fill" />,
+            run: () => {
+              openAIDock({ prefill: q, autoSend: true });
+              onClose();
+            },
+          },
+          {
+            id: "ask-assistant",
+            label: `Open in AI Assistant`,
+            sublabel: "Take this to the dedicated assistant page",
+            icon: <ArrowRight className="size-[18px]" />,
             run: () => {
               try {
                 localStorage.setItem("vv-assistant-prefill", q);
@@ -307,8 +320,7 @@ export function CommandPalette({
                   <button
                     type="button"
                     onClick={() => {
-                      try { localStorage.setItem("vv-assistant-prefill", query); } catch { /* storage unavailable */ }
-                      router.push("/assistant");
+                      openAIDock({ prefill: query, autoSend: true });
                       onClose();
                     }}
                     className="flex cursor-pointer items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-[13px] text-muted transition-colors hover:border-faint hover:text-ink active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -381,7 +393,7 @@ export function CommandPalette({
               {query.split(" ").length >= 2 && (
                 <p className="text-[11px] text-faint">
                   <Sparkle className="mr-1 inline size-3" weight="fill" />
-                  Enter to ask AI
+                  Enter to ask the AI Dock in place
                 </p>
               )}
             </div>

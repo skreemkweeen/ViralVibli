@@ -8,10 +8,15 @@ import { CommandPalette } from "./command-palette";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { AIDock, AIDockTrigger } from "@/components/ai/ai-dock";
 
+/** Event contract for opening the AI Dock from anywhere in the tree. */
+export type OpenDockDetail = { prefill?: string; autoSend?: boolean };
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [dockOpen, setDockOpen] = useState(false);
+  const [dockPrefill, setDockPrefill] = useState<string | undefined>();
+  const [dockAutoSend, setDockAutoSend] = useState(false);
   const pathname = usePathname();
 
   // Hide the floating AI trigger on the assistant route itself — it would
@@ -30,10 +35,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       } else if (key === "j") {
         e.preventDefault();
         setDockOpen((v) => !v);
+        setDockPrefill(undefined);
+        setDockAutoSend(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // External open-dock bridge — any component can dispatch this event with
+  // an optional prefill + autoSend flag to seed the dock's composer.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<OpenDockDetail>).detail ?? {};
+      setDockPrefill(detail.prefill);
+      setDockAutoSend(Boolean(detail.autoSend));
+      setDockOpen(true);
+    };
+    window.addEventListener("vv:open-dock", handler);
+    return () => window.removeEventListener("vv:open-dock", handler);
   }, []);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
@@ -64,7 +84,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {showDockTrigger && !dockOpen && (
         <AIDockTrigger onClick={() => setDockOpen(true)} />
       )}
-      <AIDock open={dockOpen} onOpenChange={setDockOpen} />
+      <AIDock
+        open={dockOpen}
+        onOpenChange={(next) => {
+          setDockOpen(next);
+          if (!next) {
+            setDockPrefill(undefined);
+            setDockAutoSend(false);
+          }
+        }}
+        prefill={dockPrefill}
+        autoSend={dockAutoSend}
+        onPrefillConsumed={() => {
+          setDockPrefill(undefined);
+          setDockAutoSend(false);
+        }}
+      />
     </div>
   );
+}
+
+/** Sugar for external callers — dispatches the custom event that AppShell listens for. */
+export function openAIDock(detail: OpenDockDetail = {}): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("vv:open-dock", { detail }));
 }

@@ -97,9 +97,18 @@ function moduleFromPath(pathname: string): { id: string; name: string } {
 export function AIDock({
   open,
   onOpenChange,
+  prefill,
+  autoSend,
+  onPrefillConsumed,
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
+  /** Seed the composer with this text when the dock opens. */
+  prefill?: string;
+  /** When true, send the prefill automatically as soon as it seeds. */
+  autoSend?: boolean;
+  /** Notify parent that the prefill has been consumed so it can reset. */
+  onPrefillConsumed?: () => void;
 }) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -132,6 +141,28 @@ export function AIDock({
   useEffect(() => {
     if (open) requestAnimationFrame(() => textareaRef.current?.focus());
   }, [open]);
+
+  // Consume any prefill on open — seed the composer and (optionally) auto-send.
+  useEffect(() => {
+    if (!open || !prefill) return;
+    setInput(prefill);
+    if (autoSend) {
+      // Defer to next tick so the composer has picked up state
+      const t = setTimeout(() => {
+        void send(prefill);
+      }, 20);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, prefill, autoSend]);
+
+  // Notify the parent to clear the prefill once we've picked it up.
+  useEffect(() => {
+    if (open && prefill && onPrefillConsumed) {
+      const t = setTimeout(onPrefillConsumed, 60);
+      return () => clearTimeout(t);
+    }
+  }, [open, prefill, onPrefillConsumed]);
 
   // Close on Escape
   useEffect(() => {
