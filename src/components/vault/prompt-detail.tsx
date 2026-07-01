@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   X,
   Copy,
@@ -11,11 +11,20 @@ import {
   CaretDown,
   ClockCounterClockwise,
   ArrowCounterClockwise,
+  Plus,
+  Code,
+  LinkSimple,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useVault } from "@/lib/vault/store";
 import { categories, platforms, transformOps } from "@/lib/vault/data";
-import type { PromptCategory, PromptPlatform, TransformOp } from "@/lib/vault/types";
+import type {
+  PromptCategory,
+  PromptEntry,
+  PromptPlatform,
+  TransformOp,
+} from "@/lib/vault/types";
+import { extractVariables } from "@/lib/vault/variables";
 
 export function VaultPromptDetail() {
   const {
@@ -42,6 +51,7 @@ export function VaultPromptDetail() {
 
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editCategory, setEditCategory] = useState<PromptCategory>("creative");
   const [editPlatform, setEditPlatform] = useState<PromptPlatform | "">("");
   const [selectedOp, setSelectedOp] = useState<TransformOp>("improve");
@@ -49,16 +59,19 @@ export function VaultPromptDetail() {
   const [copied, setCopied] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [tagDraft, setTagDraft] = useState("");
 
   // Sync local edit state when selection changes
   useEffect(() => {
     if (!prompt) return;
     setEditTitle(prompt.title);
     setEditContent(prompt.content);
+    setEditDescription(prompt.description ?? "");
     setEditCategory(prompt.category);
     setEditPlatform(prompt.platform ?? "");
     setDirty(false);
     setShowHistory(false);
+    setTagDraft("");
   }, [prompt?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = useCallback(() => {
@@ -66,11 +79,58 @@ export function VaultPromptDetail() {
     updatePrompt(prompt.id, {
       title: editTitle.trim() || editContent.slice(0, 60),
       content: editContent,
+      description: editDescription.trim() || undefined,
       category: editCategory,
       platform: editPlatform || undefined,
     });
     setDirty(false);
-  }, [prompt, editTitle, editContent, editCategory, editPlatform, updatePrompt]);
+  }, [
+    prompt,
+    editTitle,
+    editContent,
+    editDescription,
+    editCategory,
+    editPlatform,
+    updatePrompt,
+  ]);
+
+  // Variables extracted from the live editor content so the list updates as
+  // the user types (no store round-trip).
+  const variables = useMemo(() => extractVariables(editContent), [editContent]);
+
+  // Related prompts: highest tag overlap, exclude the current one, cap at 4.
+  const related = useMemo<PromptEntry[]>(() => {
+    if (!prompt || prompt.tags.length === 0) return [];
+    const mine = new Set(prompt.tags);
+    return prompts
+      .filter((p) => p.id !== prompt.id && p.tags.some((t) => mine.has(t)))
+      .map((p) => ({
+        entry: p,
+        score: p.tags.filter((t) => mine.has(t)).length,
+      }))
+      .sort((a, b) => b.score - a.score || b.entry.updatedAt - a.entry.updatedAt)
+      .slice(0, 4)
+      .map((x) => x.entry);
+  }, [prompt, prompts]);
+
+  const addTag = useCallback(
+    (raw: string) => {
+      if (!prompt) return;
+      const tag = raw.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40);
+      if (!tag) return;
+      if (prompt.tags.includes(tag)) return;
+      updatePrompt(prompt.id, { tags: [...prompt.tags, tag] });
+    },
+    [prompt, updatePrompt],
+  );
+
+  const removeTag = useCallback(
+    (tag: string) => {
+      if (!prompt) return;
+      updatePrompt(prompt.id, { tags: prompt.tags.filter((t) => t !== tag) });
+    },
+    [prompt, updatePrompt],
+  );
 
   const handleCopy = useCallback(() => {
     if (!prompt) return;
@@ -199,6 +259,24 @@ export function VaultPromptDetail() {
           </div>
         </div>
 
+        {/* Description */}
+        <div className="mb-4">
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-faint">
+            Description
+          </label>
+          <textarea
+            value={editDescription}
+            onChange={(e) => {
+              setEditDescription(e.target.value);
+              setDirty(true);
+            }}
+            rows={2}
+            placeholder="What is this prompt for? One-liner is fine."
+            className="w-full resize-none rounded-xl border border-line bg-bg px-3.5 py-2 text-[12.5px] italic leading-relaxed text-muted placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+            aria-label="Prompt description"
+          />
+        </div>
+
         {/* Content editor */}
         <div className="mb-4">
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-faint">
@@ -218,7 +296,7 @@ export function VaultPromptDetail() {
             <button
               type="button"
               onClick={handleSave}
-              className="mt-2 flex items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 cursor-pointer"
+              className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
               <Check className="size-3.5" weight="bold" />
               Save changes
@@ -226,22 +304,132 @@ export function VaultPromptDetail() {
           )}
         </div>
 
-        {/* Tags */}
-        {prompt.tags.length > 0 && (
+        {/* Variables — surfaces {token} placeholders live from the editor */}
+        {variables.length > 0 && (
           <div className="mb-4">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
-              Tags
-            </p>
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Code className="size-3 text-faint" weight="bold" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+                Variables
+              </p>
+              <span className="ml-1 rounded-full border border-line-soft bg-bg px-1.5 py-0 text-[10px] tabular-nums text-faint">
+                {variables.length}
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {prompt.tags.map((tag) => (
+              {variables.map((v) => (
                 <span
-                  key={tag}
-                  className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[12px] text-muted"
+                  key={v}
+                  className="rounded-md border border-accent/30 bg-accent/[0.06] px-2 py-0.5 font-mono text-[11.5px] text-accent-fg"
                 >
-                  {tag}
+                  {`{${v}}`}
                 </span>
               ))}
             </div>
+            <p className="mt-1.5 text-[11px] text-faint">
+              Use these tokens as slots the AI fills at runtime.
+            </p>
+          </div>
+        )}
+
+        {/* Tags editor */}
+        <div className="mb-4">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-faint">
+            Tags
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {prompt.tags.map((tag) => (
+              <span
+                key={tag}
+                className="group inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 py-0.5 pl-2.5 pr-1 text-[12px] text-muted"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  aria-label={`Remove tag ${tag}`}
+                  className="grid size-4 cursor-pointer place-items-center rounded-full text-faint transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+                >
+                  <X className="size-2.5" weight="bold" />
+                </button>
+              </span>
+            ))}
+            <div className="inline-flex items-center gap-1">
+              <input
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    addTag(tagDraft);
+                    setTagDraft("");
+                  } else if (e.key === "Backspace" && !tagDraft && prompt.tags.length) {
+                    removeTag(prompt.tags[prompt.tags.length - 1]);
+                  }
+                }}
+                placeholder="Add tag"
+                className="w-24 rounded-full border border-line bg-bg px-2.5 py-0.5 text-[12px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                aria-label="Add tag"
+              />
+              {tagDraft && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    addTag(tagDraft);
+                    setTagDraft("");
+                  }}
+                  aria-label="Add tag"
+                  className="grid size-6 cursor-pointer place-items-center rounded-full bg-accent text-accent-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                >
+                  <Plus className="size-3" weight="bold" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Related prompts by tag overlap */}
+        {related.length > 0 && (
+          <div className="mb-4">
+            <div className="mb-2 flex items-center gap-1.5">
+              <LinkSimple className="size-3 text-faint" weight="bold" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+                Related prompts
+              </p>
+            </div>
+            <ul className="space-y-1">
+              {related.map((r) => {
+                const shared = r.tags.filter((t) => prompt.tags.includes(t));
+                return (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectPrompt(r.id)}
+                      className="flex w-full cursor-pointer items-start gap-2 rounded-lg border border-line-soft bg-bg px-3 py-2 text-left transition-colors hover:border-faint hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12.5px] font-medium text-ink">
+                          {r.title}
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap gap-1">
+                          {shared.slice(0, 3).map((t) => (
+                            <span
+                              key={t}
+                              className="rounded-full border border-accent/30 bg-accent/[0.06] px-1.5 py-0 text-[9.5px] text-accent-fg"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </span>
+                      </span>
+                      <span className="shrink-0 rounded-md border border-line/60 bg-bg px-1.5 py-0.5 text-[10px] tabular-nums text-faint">
+                        {r.usageCount}×
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
 

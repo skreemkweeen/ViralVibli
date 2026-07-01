@@ -38,6 +38,13 @@ export type Concept = {
   collectionId: string | null;
   /** Display name; defaults to a formatted timestamp */
   label?: string;
+  /**
+   * Direction snapshot at the moment of generation. Optional so legacy
+   * concepts persisted before this field hydrate cleanly.
+   */
+  direction?: Direction;
+  /** Free-form notes the creator attaches after seeing the render. */
+  notes?: string;
 };
 
 export type HistoryEntry = {
@@ -87,6 +94,10 @@ type VisionState = {
   assignCollection: (id: string, collectionId: string | null) => void;
   duplicateConcept: (id: string) => void;
   renameConcept: (id: string, label: string) => void;
+  /** Load a concept's direction snapshot back into the builder. */
+  remixConcept: (id: string) => void;
+  /** Attach a free-form note to a concept. */
+  setConceptNotes: (id: string, notes: string) => void;
 
   history: HistoryEntry[];
   restore: (entry: HistoryEntry) => void;
@@ -188,6 +199,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
         createdAt: Date.now() + i,
         favorite: false,
         collectionId: null,
+        direction: snap,
       }));
 
       setConcepts((c) => [...made, ...c]);
@@ -320,6 +332,25 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const remixConcept = useCallback(
+    (id: string) => {
+      const src = concepts.find((x) => x.id === id);
+      if (!src?.direction) return;
+      setDirection(src.direction);
+    },
+    [concepts],
+  );
+
+  const setConceptNotes = useCallback(
+    (id: string, notes: string) =>
+      setConcepts((c) =>
+        c.map((x) =>
+          x.id === id ? { ...x, notes: notes.trim() || undefined } : x,
+        ),
+      ),
+    [],
+  );
+
   const restore = useCallback(
     (entry: HistoryEntry) => setDirection(entry.direction),
     [],
@@ -352,6 +383,8 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       assignCollection,
       duplicateConcept,
       renameConcept,
+      remixConcept,
+      setConceptNotes,
       history,
       restore,
       clearHistory,
@@ -381,6 +414,8 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       assignCollection,
       duplicateConcept,
       renameConcept,
+      remixConcept,
+      setConceptNotes,
       history,
       restore,
       clearHistory,

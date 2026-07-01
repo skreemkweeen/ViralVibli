@@ -13,6 +13,8 @@ import {
   DownloadSimple,
   PencilSimple,
   X,
+  MagicWand,
+  Note,
 } from "@phosphor-icons/react";
 import { useVision, type Concept } from "@/lib/vision/vision-store";
 import { conceptGradient } from "@/lib/vision/prompt";
@@ -27,13 +29,18 @@ export function ConceptCard({ concept }: { concept: Concept }) {
     createCollection,
     duplicateConcept,
     renameConcept,
+    remixConcept,
+    setConceptNotes,
   } = useVision();
   const [copied, setCopied] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(concept.label ?? "");
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(concept.notes ?? "");
   const pickerRef = useRef<HTMLDivElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const reduce = useReducedMotion();
 
   const cat = categories.find((c) => c.id === concept.categoryId);
@@ -56,6 +63,15 @@ export function ConceptCard({ concept }: { concept: Concept }) {
   useEffect(() => {
     if (renaming) renameRef.current?.focus();
   }, [renaming]);
+
+  useEffect(() => {
+    if (notesOpen) notesRef.current?.focus();
+  }, [notesOpen]);
+
+  function commitNotes() {
+    setConceptNotes(concept.id, notesDraft);
+    setNotesOpen(false);
+  }
 
   async function copy() {
     try {
@@ -157,6 +173,24 @@ export function ConceptCard({ concept }: { concept: Concept }) {
           </IconBtn>
           <IconBtn label="Duplicate" onClick={() => duplicateConcept(concept.id)}>
             <CopySimple className="size-4" />
+          </IconBtn>
+          {concept.direction && (
+            <IconBtn
+              label="Remix — load direction into builder"
+              onClick={() => remixConcept(concept.id)}
+            >
+              <MagicWand className="size-4" />
+            </IconBtn>
+          )}
+          <IconBtn
+            label={concept.notes ? "Edit note" : "Add note"}
+            onClick={() => {
+              setNotesDraft(concept.notes ?? "");
+              setNotesOpen(true);
+            }}
+            active={Boolean(concept.notes)}
+          >
+            <Note className="size-4" weight={concept.notes ? "fill" : "regular"} />
           </IconBtn>
           <IconBtn label={concept.imageUrl ? "Open image" : "Export prompt"} onClick={exportAsset}>
             <DownloadSimple className="size-4" />
@@ -272,6 +306,64 @@ export function ConceptCard({ concept }: { concept: Concept }) {
             </>
           )}
         </div>
+
+        {/* Notes surface — visible whenever a note exists so it's part of
+            the visual language, not hidden behind a hover state. */}
+        {concept.notes && !notesOpen && (
+          <button
+            type="button"
+            onClick={() => {
+              setNotesDraft(concept.notes ?? "");
+              setNotesOpen(true);
+            }}
+            aria-label="Edit note"
+            className="mt-2 flex w-full cursor-pointer items-start gap-2 rounded-lg border border-accent/30 bg-accent/[0.06] px-2.5 py-1.5 text-left transition-colors hover:border-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          >
+            <Note weight="fill" className="mt-0.5 size-3 shrink-0 text-accent-fg" />
+            <span className="min-w-0 flex-1 text-[11.5px] italic leading-snug text-muted line-clamp-2">
+              {concept.notes}
+            </span>
+          </button>
+        )}
+
+        {notesOpen && (
+          <div className="mt-2 rounded-lg border border-line bg-bg p-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-faint">
+              Note
+            </label>
+            <textarea
+              ref={notesRef}
+              value={notesDraft}
+              onChange={(e) => setNotesDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setNotesOpen(false);
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commitNotes();
+              }}
+              rows={3}
+              placeholder="What worked. What to adjust next time."
+              className="w-full resize-none rounded-md border border-line bg-surface px-2 py-1.5 text-[12px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+            />
+            <div className="mt-1.5 flex items-center justify-between gap-2">
+              <span className="text-[10px] text-faint">⌘↵ save · Esc cancel</span>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setNotesOpen(false)}
+                  className="cursor-pointer rounded-md border border-line px-2 py-0.5 text-[11px] text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={commitNotes}
+                  className="cursor-pointer rounded-md bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </figcaption>
     </motion.figure>
   );

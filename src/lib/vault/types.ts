@@ -33,6 +33,11 @@ export type PromptEntry = {
   id: string;
   title: string;
   content: string;
+  /**
+   * One-line summary of what this prompt is for. Optional so legacy entries
+   * hydrate cleanly; the inspector renders an empty affordance when absent.
+   */
+  description?: string;
   category: PromptCategory;
   tags: string[];
   platform?: PromptPlatform;
