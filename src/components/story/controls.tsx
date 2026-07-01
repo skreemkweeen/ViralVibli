@@ -38,7 +38,7 @@ export function StoryControls() {
           onChange={(e) => setField("subject", e.target.value)}
           placeholder="My new skincare serum, a brand collaboration, a personal travel story…"
           rows={3}
-          className="w-full resize-none rounded-xl border border-line bg-bg px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none"
+          className="w-full resize-none rounded-xl border border-line bg-bg px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-faint transition-colors focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
         />
       </div>
 
@@ -57,7 +57,7 @@ export function StoryControls() {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setField("framework", fw.id)}
-                  className={`w-full rounded-xl border px-3.5 py-3 text-left transition-colors ${
+                  className={`w-full cursor-pointer rounded-xl border px-3.5 py-3 text-left transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                     active
                       ? "border-accent/50 bg-accent/[0.08]"
                       : "border-line bg-bg hover:border-faint"

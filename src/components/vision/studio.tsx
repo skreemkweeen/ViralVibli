@@ -27,8 +27,9 @@ export function VisionStudio() {
               </p>
             </div>
             <button
+              type="button"
               onClick={() => setPresetsOpen(true)}
-              className="hidden shrink-0 items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint sm:inline-flex"
+              className="hidden shrink-0 cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:inline-flex"
             >
               <SquaresFour className="size-4 text-accent-fg" />
               Browse presets

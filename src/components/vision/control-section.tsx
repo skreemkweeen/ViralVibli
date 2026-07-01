@@ -25,7 +25,7 @@ export function ControlSection({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 py-3.5 text-left"
+        className="flex w-full cursor-pointer items-center justify-between gap-3 py-3.5 text-left transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 rounded"
       >
         <span className="flex items-baseline gap-2">
           <span className="text-[13px] font-medium text-ink">{title}</span>

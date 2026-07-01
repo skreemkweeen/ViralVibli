@@ -32,8 +32,9 @@ export function ControlPanel() {
       <div className="flex items-center justify-between border-b border-line px-5 py-4">
         <h2 className="text-[14px] font-medium text-ink">Direction</h2>
         <button
+          type="button"
           onClick={resetDirection}
-          className="text-[12.5px] text-muted transition-colors hover:text-ink"
+          className="cursor-pointer text-[12.5px] text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 rounded"
         >
           Reset
         </button>
@@ -46,7 +47,8 @@ export function ControlPanel() {
             value={direction.subject}
             onChange={(e) => setField("subject", e.target.value)}
             placeholder={cat?.hint ?? "Describe the subject"}
-            className="h-10 w-full rounded-lg border border-line bg-bg px-3 text-[13px] text-ink placeholder:text-faint focus:border-faint focus:outline-none"
+            aria-label="Subject"
+            className="h-10 w-full rounded-lg border border-line bg-bg px-3 text-[13px] text-ink placeholder:text-faint transition-colors focus:border-faint focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
           />
         </ControlSection>
 

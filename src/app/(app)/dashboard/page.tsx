@@ -80,7 +80,7 @@ export default function DashboardPage() {
       {/* AI assistant CTA */}
       <Link
         href="/assistant"
-        className="group flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/[0.12] to-surface p-6 transition-colors hover:border-accent/50"
+        className="group flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/[0.12] to-surface p-6 transition-colors hover:border-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       >
         <div className="flex items-center gap-4">
           <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent text-accent-ink">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
                   <Link
                     key={project.id}
                     href="/projects"
-                    className={`flex flex-col rounded-2xl border border-line border-l-[3px] bg-surface p-5 transition-colors hover:border-line/80 ${colors.border}`}
+                    className={`flex flex-col rounded-2xl border border-line border-l-[3px] bg-surface p-5 transition-colors hover:border-line/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${colors.border}`}
                   >
                     <div
                       className={`mb-3 size-7 rounded-lg ${colors.dot} opacity-70`}
@@ -143,7 +143,7 @@ export default function DashboardPage() {
               })}
               <Link
                 href="/projects"
-                className="flex flex-col items-center justify-center rounded-2xl border border-line border-dashed bg-surface/50 p-5 text-center transition-colors hover:border-faint"
+                className="flex flex-col items-center justify-center rounded-2xl border border-line border-dashed bg-surface/50 p-5 text-center transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
               >
                 <FolderSimple className="size-6 text-faint" />
                 <p className="mt-2 text-[13px] text-faint">New project</p>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                 <Link
                   key={m.id}
                   href={m.href}
-                  className="group flex flex-col rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-faint"
+                  className="group flex flex-col rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                 >
                   <div className="flex items-center justify-between">
                     <span className="grid size-10 place-items-center rounded-xl border border-line-soft bg-bg text-accent-fg">
@@ -240,7 +240,7 @@ function StatCard({
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-faint"
+      className="rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
     >
       <p className="text-[13px] text-muted">{label}</p>
       <p className="mt-2 font-mono text-[26px] font-medium tabular-nums text-ink">
