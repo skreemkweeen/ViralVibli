@@ -14,6 +14,12 @@ export async function POST(req: NextRequest) {
   if (!prompt) {
     return NextResponse.json({ error: "prompt is required" }, { status: 400 });
   }
+  if (prompt.length > 4000) {
+    return NextResponse.json(
+      { error: "prompt exceeds 4000 characters" },
+      { status: 413 },
+    );
+  }
 
   const request: ImageRequest = {
     prompt,

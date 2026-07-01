@@ -1,8 +1,18 @@
 import type { NextRequest } from "next/server";
 import type { WorkspaceContext } from "@/lib/context/workspace";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type AssistantMessage = { role: "user" | "assistant"; content: string };
 type ChatBody = { messages: AssistantMessage[]; context?: WorkspaceContext };
+
+const SSE_HEADERS = {
+  "Content-Type": "text/event-stream",
+  "Cache-Control": "no-cache, no-transform",
+  Connection: "keep-alive",
+  "X-Accel-Buffering": "no",
+} as const;
 
 function buildSystemPrompt(ctx: WorkspaceContext | undefined): string {
   const lines: string[] = [
@@ -49,7 +59,7 @@ function buildSystemPrompt(ctx: WorkspaceContext | undefined): string {
   return lines.join("\n");
 }
 
-function localStream(messages: AssistantMessage[]): Response {
+function localStream(messages: AssistantMessage[], signal?: AbortSignal): Response {
   const last = messages.at(-1)?.content?.toLowerCase() ?? "";
   let response: string;
 
@@ -75,7 +85,9 @@ function localStream(messages: AssistantMessage[]): Response {
   const stream = new ReadableStream({
     async start(controller) {
       for (const word of words) {
+        if (signal?.aborted) break;
         await new Promise<void>((r) => setTimeout(r, 18 + Math.random() * 28));
+        if (signal?.aborted) break;
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ text: word })}\n\n`),
         );
@@ -85,13 +97,7 @@ function localStream(messages: AssistantMessage[]): Response {
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return new Response(stream, { headers: SSE_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
@@ -106,10 +112,26 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(messages) || messages.length === 0) {
     return Response.json({ error: "messages required" }, { status: 400 });
   }
+  if (messages.length > 50) {
+    return Response.json(
+      { error: "conversation exceeds 50 messages" },
+      { status: 413 },
+    );
+  }
+  const totalChars = messages.reduce(
+    (sum, m) => sum + (typeof m.content === "string" ? m.content.length : 0),
+    0,
+  );
+  if (totalChars > 60_000) {
+    return Response.json(
+      { error: "conversation exceeds 60000 characters" },
+      { status: 413 },
+    );
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return localStream(messages);
+    return localStream(messages, req.signal);
   }
 
   const systemPrompt = buildSystemPrompt(context);
@@ -130,13 +152,14 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       }),
+      signal: req.signal,
     });
   } catch {
-    return localStream(messages);
+    return localStream(messages, req.signal);
   }
 
   if (!anthropicRes.ok || !anthropicRes.body) {
-    return localStream(messages);
+    return localStream(messages, req.signal);
   }
 
   const encoder = new TextEncoder();
@@ -150,6 +173,7 @@ export async function POST(req: NextRequest) {
 
       try {
         while (true) {
+          if (req.signal.aborted) break;
           const { done, value } = await reader.read();
           if (done) break;
 
@@ -192,11 +216,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return new Response(readable, { headers: SSE_HEADERS });
 }

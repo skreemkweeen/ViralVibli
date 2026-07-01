@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
   if (!content) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
+  if (content.length > 8000) {
+    return NextResponse.json(
+      { error: "content exceeds 8000 characters" },
+      { status: 413 },
+    );
+  }
 
   const operation = body.operation as TransformOp;
   if (!VALID_OPS.includes(operation)) {

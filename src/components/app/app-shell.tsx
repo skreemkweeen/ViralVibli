@@ -25,6 +25,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh bg-bg text-ink">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <Sidebar mobileOpen={mobileNav} onClose={() => setMobileNav(false)} />
 
       <div className="lg:pl-[264px]">
@@ -32,7 +35,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onMenu={() => setMobileNav(true)}
           onSearch={openPalette}
         />
-        <main className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1180px] px-5 py-8 md:px-8 focus:outline-none"
+        >
           {children}
         </main>
       </div>

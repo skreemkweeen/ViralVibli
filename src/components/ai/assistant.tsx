@@ -126,7 +126,13 @@ export function Assistant() {
   return (
     <div className="flex h-[calc(100dvh-9rem)] flex-col">
       {/* scroll container */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation"
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
         {empty ? (
           <EmptyState
             userName={user?.name ?? "Creator"}
@@ -171,7 +177,7 @@ export function Assistant() {
               type="button"
               onClick={stop}
               aria-label="Stop generation"
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-ink transition-colors hover:bg-surface"
+              className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl bg-surface-2 text-ink transition-colors hover:bg-surface active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
             >
               <Stop weight="fill" className="size-4" />
             </button>
@@ -180,14 +186,16 @@ export function Assistant() {
               type="submit"
               disabled={!input.trim()}
               aria-label="Send message"
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-accent-ink transition-opacity disabled:opacity-40"
+              className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl bg-accent text-accent-ink transition-opacity hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
               <ArrowUp weight="bold" className="size-4" />
             </button>
           )}
         </form>
         {error ? (
-          <p className="mt-2 text-center text-[12px] text-red-400">{error}</p>
+          <p role="alert" className="mt-2 text-center text-[12px] text-red-400">
+            {error}
+          </p>
         ) : (
           <p className="mt-2 text-center text-[12px] text-faint">
             Responses are AI-generated. Review before publishing.

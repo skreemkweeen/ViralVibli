@@ -16,6 +16,12 @@ export async function POST(req: NextRequest) {
   if (!brief) {
     return NextResponse.json({ error: "brief is required" }, { status: 400 });
   }
+  if (brief.length > 4000) {
+    return NextResponse.json(
+      { error: "brief exceeds 4000 characters" },
+      { status: 413 },
+    );
+  }
 
   const rawCount = typeof body.count === "number" ? body.count : 6;
   const count = VALID_COUNTS.includes(rawCount)
