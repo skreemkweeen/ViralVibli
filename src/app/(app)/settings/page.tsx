@@ -5,6 +5,10 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { useTheme, type Theme } from "@/components/app/theme-provider";
 import { useWorkspace } from "@/lib/workspace/store";
 import { Check, CheckCircle } from "@phosphor-icons/react";
+import { Card as UiCard } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { Input } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 type Tab = "profile" | "brand" | "appearance" | "notifications" | "billing";
 const tabs: { id: Tab; label: string }[] = [
@@ -90,7 +94,7 @@ function BrandSection() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <UiCard padding="lg">
         <h2 className="text-[15px] font-medium text-ink">Brand Identity</h2>
         <p className="mt-1 text-[13px] text-muted">
           The AI Assistant uses this to match your voice and brand in every
@@ -98,84 +102,67 @@ function BrandSection() {
         </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1.5 block text-[13px] text-muted">Brand name</span>
-            <input
+            <span className="mb-1.5 block text-[12px] text-faint">Brand name</span>
+            <Input
               value={draft.brand}
               onChange={(e) => setDraft((d) => ({ ...d, brand: e.target.value }))}
               placeholder="Your Brand"
-              className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[13px] text-muted">Tagline</span>
-            <input
+            <span className="mb-1.5 block text-[12px] text-faint">Tagline</span>
+            <Input
               value={draft.tagline ?? ""}
               onChange={(e) => setDraft((d) => ({ ...d, tagline: e.target.value }))}
               placeholder="What you stand for"
-              className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
             />
           </label>
         </div>
         <div className="mt-4">
-          <span className="mb-2 block text-[13px] text-muted">Primary platform</span>
-          <div className="flex flex-wrap gap-2">
+          <span className="mb-2 block text-[12px] text-faint">Primary platform</span>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Primary platform">
             {PLATFORM_OPTIONS.map((p) => (
-              <button
+              <Chip
                 key={p}
-                type="button"
-                aria-pressed={draft.primaryPlatform === p}
+                active={draft.primaryPlatform === p}
                 onClick={() => setDraft((d) => ({ ...d, primaryPlatform: p }))}
-                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[13px] transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
-                  draft.primaryPlatform === p
-                    ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
-                    : "border-line text-muted hover:border-faint hover:text-ink"
-                }`}
               >
                 {p}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
-      </Card>
+      </UiCard>
 
-      <Card>
+      <UiCard padding="lg">
         <h2 className="text-[15px] font-medium text-ink">Brand Voice</h2>
         <p className="mt-1 text-[13px] text-muted">
           How your brand sounds. The assistant writes in this voice.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Voice preset">
           {VOICE_PRESETS.map((v) => (
-            <button
+            <Chip
               key={v}
-              type="button"
-              aria-pressed={draft.voice === v}
+              active={draft.voice === v}
               onClick={() => setDraft((d) => ({ ...d, voice: v }))}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-[13px] transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
-                draft.voice === v
-                  ? "border-accent/50 bg-accent/[0.08] text-accent-fg"
-                  : "border-line text-muted hover:border-faint hover:text-ink"
-              }`}
             >
               {v}
-            </button>
+            </Chip>
           ))}
         </div>
         <div className="mt-3">
-          <input
+          <label className="sr-only" htmlFor="brand-voice-custom">Custom voice</label>
+          <Input
+            id="brand-voice-custom"
             value={draft.voice}
             onChange={(e) => setDraft((d) => ({ ...d, voice: e.target.value }))}
             placeholder="Or describe your own voice..."
-            className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
           />
         </div>
-      </Card>
+      </UiCard>
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          className="h-11 cursor-pointer rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-        >
+        <Button onClick={handleSave} aria-live="polite">
           {saved ? (
             <span className="flex items-center gap-2">
               <CheckCircle weight="fill" className="size-4" /> Saved
@@ -183,7 +170,7 @@ function BrandSection() {
           ) : (
             "Save brand settings"
           )}
-        </button>
+        </Button>
         <p className="text-[12px] text-faint">
           Changes apply immediately to AI responses.
         </p>
@@ -192,20 +179,11 @@ function BrandSection() {
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-6">{children}</div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] text-muted">{label}</span>
-      <input
-        defaultValue={value}
-        className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink focus:border-faint focus:outline-none"
-      />
+      <span className="mb-1.5 block text-[12px] text-faint">{label}</span>
+      <Input defaultValue={value} />
     </label>
   );
 }
@@ -213,7 +191,7 @@ function Field({ label, value }: { label: string; value: string }) {
 function ProfileSection() {
   const { user } = useAuth();
   return (
-    <Card>
+    <UiCard padding="lg">
       <div className="flex items-center gap-4">
         <span className="grid size-16 place-items-center rounded-2xl bg-accent text-[20px] font-semibold text-accent-ink">
           {user?.initials ?? "VV"}
@@ -224,15 +202,13 @@ function ProfileSection() {
         </div>
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <Field label="Display name" value={user?.name ?? ""} />
-        <Field label="Email" value={user?.email ?? ""} />
+        <ReadOnlyField label="Display name" value={user?.name ?? ""} />
+        <ReadOnlyField label="Email" value={user?.email ?? ""} />
       </div>
       <div className="mt-6">
-        <button className="h-11 cursor-pointer rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
-          Save changes
-        </button>
+        <Button>Save changes</Button>
       </div>
-    </Card>
+    </UiCard>
   );
 }
 
@@ -245,7 +221,7 @@ const themeOptions: { id: Theme; label: string; hint: string }[] = [
 function AppearanceSection() {
   const { theme, setTheme } = useTheme();
   return (
-    <Card>
+    <UiCard padding="lg">
       <h2 className="text-[15px] font-medium text-ink">Theme</h2>
       <p className="mt-1 text-[13px] text-muted">
         Choose how the workspace looks. The marketing site stays dark by design.
@@ -257,7 +233,8 @@ function AppearanceSection() {
             <button
               key={o.id}
               onClick={() => setTheme(o.id)}
-              className={`flex flex-col items-start rounded-xl border p-4 text-left transition-colors ${
+              aria-pressed={selected}
+              className={`flex cursor-pointer flex-col items-start rounded-xl border p-4 text-left transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                 selected
                   ? "border-accent/50 bg-accent/[0.06]"
                   : "border-line hover:border-faint"
@@ -274,7 +251,7 @@ function AppearanceSection() {
           );
         })}
       </div>
-    </Card>
+    </UiCard>
   );
 }
 
@@ -286,7 +263,7 @@ function NotificationsSection() {
     { label: "Product updates", detail: "New studios and features." },
   ];
   return (
-    <Card>
+    <UiCard padding="lg">
       <h2 className="text-[15px] font-medium text-ink">Email notifications</h2>
       <ul className="mt-4 divide-y divide-line-soft">
         {items.map((it, i) => (
@@ -299,7 +276,7 @@ function NotificationsSection() {
           </li>
         ))}
       </ul>
-    </Card>
+    </UiCard>
   );
 }
 
@@ -311,7 +288,7 @@ function Toggle({ defaultOn, label }: { defaultOn: boolean; label: string }) {
       aria-checked={on}
       aria-label={label}
       onClick={() => setOn((v) => !v)}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+      className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
         on ? "bg-accent" : "bg-surface-2"
       }`}
     >
@@ -327,7 +304,7 @@ function Toggle({ defaultOn, label }: { defaultOn: boolean; label: string }) {
 function BillingSection() {
   const { user } = useAuth();
   return (
-    <Card>
+    <UiCard padding="lg">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-[15px] font-medium text-ink">
@@ -340,13 +317,9 @@ function BillingSection() {
         <span className="font-mono text-[22px] font-medium text-ink">$24</span>
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
-        <button className="h-11 rounded-full bg-accent px-6 text-[14px] font-medium text-accent-ink hover:bg-[#d6f56b]">
-          Manage subscription
-        </button>
-        <button className="h-11 rounded-full border border-line px-6 text-[14px] text-ink hover:border-faint">
-          View invoices
-        </button>
+        <Button>Manage subscription</Button>
+        <Button variant="ghost">View invoices</Button>
       </div>
-    </Card>
+    </UiCard>
   );
 }

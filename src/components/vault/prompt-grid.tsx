@@ -46,18 +46,18 @@ export function VaultPromptGrid() {
           <MagnifyingGlass className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
           <input
             ref={searchRef}
-            type="text"
+            type="search"
             value={filter.search}
             onChange={(e) => setFilter({ search: e.target.value })}
             placeholder="Search prompts..."
-            className="w-full rounded-xl border border-line bg-bg py-2 pl-8 pr-3 text-[13px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-bg py-2 pl-8 pr-3 text-[13px] text-ink placeholder:text-faint transition-colors focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
             aria-label="Search prompts"
           />
           {filter.search && (
             <button
               type="button"
               onClick={() => setFilter({ search: "" })}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-faint hover:text-muted"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-md p-0.5 text-faint transition-colors hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
               aria-label="Clear search"
             >
               <X className="size-3.5" />
@@ -100,7 +100,7 @@ export function VaultPromptGrid() {
                   setFilter({ category: active ? null : cat.id, scope: "all" })
                 }
                 aria-pressed={active}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                className={`flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
                   active
                     ? "bg-accent/[0.12] text-accent-fg ring-1 ring-accent/30"
                     : "bg-surface-2 text-muted hover:text-ink"
@@ -136,7 +136,7 @@ export function VaultPromptGrid() {
             <button
               type="button"
               onClick={() => setFilter({ category: null, platform: null, scope: "all", search: "" })}
-              className="flex items-center gap-1 rounded-xl border border-line bg-bg px-2.5 py-1.5 text-[12px] text-muted transition-colors hover:text-ink"
+              className="flex cursor-pointer items-center gap-1 rounded-xl border border-line bg-bg px-2.5 py-1.5 text-[12px] text-muted transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
             >
               <X className="size-3" />
               Clear

@@ -31,7 +31,7 @@ export function StudioGenerateButton({
         onClick={generating ? undefined : onGenerate}
         disabled={disabled || generating}
         aria-busy={generating}
-        className="relative flex h-10 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent px-4 text-[13.5px] font-semibold text-accent-contrast transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
+        className="relative flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent px-4 text-[13.5px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       >
         {generating && (
           <motion.span
@@ -49,7 +49,7 @@ export function StudioGenerateButton({
           type="button"
           onClick={onCancel}
           aria-label="Cancel generation"
-          className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-surface text-faint transition-colors hover:border-faint hover:text-muted"
+          className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl border border-line bg-surface text-faint transition-colors hover:border-faint hover:text-muted active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line"
         >
           <StopCircle className="size-5" />
         </button>

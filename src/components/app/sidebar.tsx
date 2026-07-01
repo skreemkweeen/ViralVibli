@@ -46,9 +46,10 @@ export function Sidebar({
             <Wordmark />
           </Link>
           <button
+            type="button"
             aria-label="Close navigation"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
+            className="grid size-8 cursor-pointer place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:hidden"
           >
             <X className="size-4" />
           </button>
@@ -56,7 +57,11 @@ export function Sidebar({
 
         {/* workspace switcher */}
         <div className="px-3">
-          <button className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-bg p-2.5 text-left transition-colors hover:border-faint">
+          <button
+            type="button"
+            aria-label="Workspace switcher"
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-line bg-bg p-2.5 text-left transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          >
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-[13px] font-semibold text-accent-ink">
               {user?.initials ?? "VV"}
             </span>

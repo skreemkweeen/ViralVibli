@@ -15,6 +15,8 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { useWorkspace } from "@/lib/workspace/store";
 import type { ProjectColor } from "@/lib/workspace/types";
 import { PROJECT_COLORS, PROJECT_COLORS_LIST } from "@/lib/workspace/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -93,14 +95,10 @@ export function ProjectsView() {
           </p>
         </div>
         {!creating && (
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-          >
+          <Button onClick={() => setCreating(true)} size="md">
             <Plus className="size-4" weight="bold" />
             New Project
-          </button>
+          </Button>
         )}
       </header>
 
@@ -120,9 +118,8 @@ export function ProjectsView() {
             <div className="space-y-3">
               <label className="block">
                 <span className="mb-1.5 block text-[12px] text-faint">Project name</span>
-                <input
+                <Input
                   ref={nameRef}
-                  type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => {
@@ -130,13 +127,13 @@ export function ProjectsView() {
                     if (e.key === "Escape") setCreating(false);
                   }}
                   placeholder="e.g. Summer Campaign"
-                  className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12px] text-faint">Description <span className="text-faint/60">(optional)</span></span>
-                <input
-                  type="text"
+                <span className="mb-1.5 block text-[12px] text-faint">
+                  Description <span className="text-faint/60">(optional)</span>
+                </span>
+                <Input
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   onKeyDown={(e) => {
@@ -144,7 +141,6 @@ export function ProjectsView() {
                     if (e.key === "Escape") setCreating(false);
                   }}
                   placeholder="What is this project about?"
-                  className="h-11 w-full rounded-xl border border-line bg-bg px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-accent/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 />
               </label>
               {/* Color picker */}
@@ -200,14 +196,10 @@ export function ProjectsView() {
             Create a project to organize stories, prompts, and generated assets
             into one workflow.
           </p>
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="mt-5 flex cursor-pointer items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[14px] font-semibold text-accent-ink transition-opacity hover:opacity-90 active:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-          >
+          <Button onClick={() => setCreating(true)} className="mt-5">
             <Plus className="size-4" weight="bold" />
             Create your first project
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
