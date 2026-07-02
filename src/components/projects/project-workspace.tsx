@@ -46,6 +46,17 @@ import {
   type ProjectNodeKind,
 } from "@/lib/projects/graph";
 import type { ProjectGraphSources } from "@/lib/projects/graph";
+import {
+  computeProjectHealth,
+  type ProjectHealth,
+} from "@/lib/projects/intelligence";
+import { buildHeatmap, type Heatmap } from "@/lib/projects/heatmap";
+import {
+  ProjectHealthPanel,
+  ProjectRecommendations,
+  ProjectDependencies,
+} from "./project-health";
+import { ProjectHeatmap } from "./project-heatmap";
 import { openAIDock } from "@/components/app/app-shell";
 
 // ─── Utility ─────────────────────────────────────────────────────────
@@ -137,6 +148,32 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       activity.filter((a) => !a.projectId || a.projectId === project?.id),
     [activity, project?.id],
   );
+
+  // ── Project intelligence: pure heuristics fed by all persisted state.
+  const health: ProjectHealth | null = useMemo(() => {
+    if (!project) return null;
+    return computeProjectHealth(project, {
+      ...sources,
+      activity: activity.map((a) => ({
+        id: a.id,
+        title: a.title,
+        createdAt: a.createdAt,
+        projectId: a.projectId,
+        type: a.type,
+      })),
+    });
+  }, [project, sources, activity]);
+
+  const heatmap: Heatmap | null = useMemo(() => {
+    if (!project) return null;
+    return buildHeatmap(
+      activity.map((a) => ({
+        createdAt: a.createdAt,
+        projectId: a.projectId,
+      })),
+      project.id,
+    );
+  }, [project, activity]);
 
   if (!hydrated) {
     return (
@@ -322,6 +359,8 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
               summary={summary}
               activity={projectActivity.slice(0, 6)}
               sources={sources}
+              health={health}
+              heatmap={heatmap}
             />
           )}
           {tab === "timeline" && (
@@ -399,6 +438,8 @@ function OverviewTab({
   summary,
   activity,
   sources,
+  health,
+  heatmap,
 }: {
   project: { id: string; name: string };
   summary: Summary;
@@ -410,6 +451,8 @@ function OverviewTab({
     href?: string;
   }>;
   sources: ProjectGraphSources;
+  health: ProjectHealth | null;
+  heatmap: Heatmap | null;
 }) {
   const stories = sources.stories?.slice(0, 3) ?? [];
   const images = sources.images?.slice(0, 3) ?? [];
@@ -418,6 +461,13 @@ function OverviewTab({
 
   return (
     <div className="flex flex-col gap-5">
+      {health && <ProjectHealthPanel health={health} />}
+      {health && (
+        <ProjectRecommendations recommendations={health.recommendations} />
+      )}
+      {heatmap && heatmap.total > 0 && <ProjectHeatmap heatmap={heatmap} />}
+      {health && <ProjectDependencies dependencies={health.dependencies} />}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Stories" value={summary.stories} icon={<FilmSlate className="size-4" weight="fill" />} href="/story" />
         <StatCard label="Images" value={summary.images} icon={<Camera className="size-4" weight="fill" />} href="/vision" />
