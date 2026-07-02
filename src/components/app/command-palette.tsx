@@ -142,6 +142,9 @@ function moduleIconElement(id: string, weight: "fill" | "regular" = "regular"): 
 }
 
 function commandIcon(cmd: PaletteCommand): React.ReactNode {
+  // Project-scoped commands read as a graph/plan; keep them visually distinct
+  // from studio-targeted commands.
+  if (cmd.group === "project") return <Path className="size-[18px] text-accent-fg" weight="fill" />;
   // Map command → module icon when the command targets a studio.
   if (cmd.id.includes("story") || cmd.id.includes("caption") || cmd.id.includes("campaign"))
     return moduleIconElement("story");
@@ -290,8 +293,13 @@ export function CommandPalette({
 }) {
   const router = useRouter();
   const { setTheme } = useTheme();
-  const { projects, activity, clearActivity, duplicateProject } =
-    useWorkspace();
+  const {
+    projects,
+    activity,
+    clearActivity,
+    duplicateProject,
+    activeProject,
+  } = useWorkspace();
   const reduce = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -340,11 +348,19 @@ export function CommandPalette({
         clearActivity,
         duplicateActiveProject: () => duplicateProject(),
         closePalette: onClose,
+        activeProject: activeProject
+          ? {
+              id: activeProject.id,
+              name: activeProject.name,
+              description: activeProject.description,
+            }
+          : null,
       };
       cmd.run(ctx);
       setHistory((h) => recordUse(h, cmd.id));
     },
     [
+      activeProject,
       router,
       setPrefill,
       setChain,
@@ -521,19 +537,23 @@ export function CommandPalette({
       });
     }
 
-    // 4. Actions — commands, filtered by q if non-empty
-    const matchedCommands = COMMANDS.map((c) => ({ cmd: c, score: matchCommand(c, q) }))
+    // 4. Actions — commands, filtered by q if non-empty. Skip project-only
+    //    commands when no project is active so we don't offer dead options.
+    const matchedCommands = COMMANDS
+      .filter((c) => !c.requiresProject || Boolean(activeProject))
+      .map((c) => ({ cmd: c, score: matchCommand(c, q) }))
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score);
 
     // Actions section: always show the top matches, capped
-    const topActions = matchedCommands.slice(0, q ? 8 : 4);
+    const topActions = matchedCommands.slice(0, q ? 10 : 6);
     if (topActions.length > 0) {
       const grouped: Record<string, PaletteCommand[]> = {};
       for (const { cmd } of topActions) {
         (grouped[cmd.group] ??= []).push(cmd);
       }
       const groupOrder: Array<keyof typeof grouped> = [
+        "project",
         "create",
         "search",
         "workspace",
@@ -546,7 +566,9 @@ export function CommandPalette({
         build.push({
           id: `actions-${g}`,
           label:
-            g === "create"
+            g === "project"
+              ? "Current project"
+              : g === "create"
               ? "Quick create"
               : g === "search"
                 ? "Search"
@@ -791,7 +813,17 @@ export function CommandPalette({
     }
 
     return build;
-  }, [query, chain, history, sources, router, onClose, dispatch, setChain]);
+  }, [
+    query,
+    chain,
+    history,
+    sources,
+    router,
+    onClose,
+    dispatch,
+    setChain,
+    activeProject,
+  ]);
 
   const allItems = useMemo(
     () => sections.flatMap((s) => s.items),

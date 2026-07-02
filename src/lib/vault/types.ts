@@ -49,6 +49,9 @@ export type PromptEntry = {
   versions: PromptVersion[];
   createdAt: number;
   updatedAt: number;
+  /** Optional project this prompt belongs to; stamped on save when a project
+   * is active in the workspace. */
+  projectId?: string;
 };
 
 export type VaultCollection = {

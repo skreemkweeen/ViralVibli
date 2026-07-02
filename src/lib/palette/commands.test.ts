@@ -23,6 +23,15 @@ describe("commands registry", () => {
     expect(groups).toContain("workspace");
     expect(groups).toContain("search");
     expect(groups).toContain("system");
+    expect(groups).toContain("project");
+  });
+
+  it("every project command declares requiresProject", () => {
+    const projectCommands = COMMANDS.filter((c) => c.group === "project");
+    expect(projectCommands.length).toBeGreaterThan(0);
+    for (const c of projectCommands) {
+      expect(c.requiresProject).toBe(true);
+    }
   });
 });
 

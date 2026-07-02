@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type {
@@ -24,6 +25,7 @@ const KEY = {
   projects: "vv-workspace-projects",
   activity: "vv-workspace-activity",
   vaultPrompts: "vv-vault-prompts",
+  activeProject: "vv-workspace-active-project",
 };
 
 let n = 0;
@@ -54,6 +56,11 @@ type WorkspaceState = {
   activity: ActivityItem[];
   hydrated: boolean;
   isEmpty: boolean;
+  /** The project the creator is currently working on (from URL or explicit set). */
+  activeProjectId: string | null;
+  /** Convenience getter — the Project object matching `activeProjectId`, or null. */
+  activeProject: Project | null;
+  setActiveProject: (id: string | null) => void;
   updateProfile: (patch: Partial<CreatorProfile>) => void;
   createProject: (
     name: string,
@@ -67,11 +74,14 @@ type WorkspaceState = {
   deleteProject: (id: string) => void;
   addItemToProject: (projectId: string, item: ProjectItemRef) => void;
   removeItemFromProject: (projectId: string, itemId: string) => void;
+  addNoteToProject: (projectId: string, body: string) => void;
+  removeNoteFromProject: (projectId: string, noteId: string) => void;
   recordActivity: (
     type: ActivityType,
     title: string,
     moduleId: string,
     href?: string,
+    projectId?: string,
   ) => void;
   /** Populate the workspace with a curated demo dataset. Overwrites existing data. */
   loadDemo: () => void;
@@ -94,24 +104,53 @@ export function WorkspaceProvider({
   const [profile, setProfile] = useState<CreatorProfile>(DEFAULT_CREATOR_PROFILE);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [activeProjectId, setActiveProjectIdState] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setProfile(load(KEY.profile, DEFAULT_CREATOR_PROFILE));
     setProjects(load(KEY.projects, []));
     setActivity(load(KEY.activity, []));
+    setActiveProjectIdState(load<string | null>(KEY.activeProject, null));
     setHydrated(true);
   }, []);
 
+  const setActiveProject = useCallback((id: string | null) => {
+    setActiveProjectIdState(id);
+    persist(KEY.activeProject, id);
+  }, []);
+
+  // Persist only when state actually changes after hydration. Guarding on
+  // `hydrated` alone still fires once on first render post-hydrate with the
+  // freshly loaded value — enough to race any external localStorage seed the
+  // test harness writes between two evaluations. We track a ref of the last
+  // persisted value to no-op the "load → persist same value" cycle.
+  const lastPersistedRef = useRef<{
+    profile: CreatorProfile | null;
+    projects: Project[] | null;
+    activity: ActivityItem[] | null;
+  }>({ profile: null, projects: null, activity: null });
+
   useEffect(() => {
-    if (hydrated) persist(KEY.profile, profile);
+    if (!hydrated) return;
+    if (lastPersistedRef.current.profile === profile) return;
+    persist(KEY.profile, profile);
+    lastPersistedRef.current.profile = profile;
   }, [profile, hydrated]);
 
   useEffect(() => {
-    if (hydrated) persist(KEY.projects, projects);
+    if (!hydrated) return;
+    if (lastPersistedRef.current.projects === projects) return;
+    persist(KEY.projects, projects);
+    lastPersistedRef.current.projects = projects;
   }, [projects, hydrated]);
 
   useEffect(() => {
-    if (hydrated) persist(KEY.activity, activity);
+    if (!hydrated) return;
+    if (lastPersistedRef.current.activity === activity) return;
+    persist(KEY.activity, activity);
+    lastPersistedRef.current.activity = activity;
   }, [activity, hydrated]);
 
   const updateProfile = useCallback((patch: Partial<CreatorProfile>) => {
@@ -214,6 +253,7 @@ export function WorkspaceProvider({
       title: string,
       moduleId: string,
       href?: string,
+      projectId?: string,
     ) => {
       setActivity((a) =>
         [
@@ -224,9 +264,61 @@ export function WorkspaceProvider({
             moduleId,
             href,
             createdAt: Date.now(),
+            projectId,
           },
           ...a,
-        ].slice(0, 50),
+        ].slice(0, 80),
+      );
+    },
+    [],
+  );
+
+  const addNoteToProject = useCallback((projectId: string, body: string) => {
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    const noteId = uid("note");
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              notes: [
+                { id: noteId, body: trimmed, createdAt: Date.now() },
+                ...(p.notes ?? []),
+              ],
+              updatedAt: Date.now(),
+            }
+          : p,
+      ),
+    );
+    setActivity((a) =>
+      [
+        {
+          id: uid("act"),
+          type: "note-added" as ActivityType,
+          title: `Added note`,
+          moduleId: "projects",
+          href: `/projects/${projectId}`,
+          createdAt: Date.now(),
+          projectId,
+        },
+        ...a,
+      ].slice(0, 80),
+    );
+  }, []);
+
+  const removeNoteFromProject = useCallback(
+    (projectId: string, noteId: string) => {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                notes: (p.notes ?? []).filter((n) => n.id !== noteId),
+                updatedAt: Date.now(),
+              }
+            : p,
+        ),
       );
     },
     [],
@@ -295,6 +387,11 @@ export function WorkspaceProvider({
     activity.length === 0 &&
     profile.brand === DEFAULT_CREATOR_PROFILE.brand;
 
+  const activeProject = useMemo(
+    () => projects.find((p) => p.id === activeProjectId) ?? null,
+    [projects, activeProjectId],
+  );
+
   const value = useMemo<WorkspaceState>(
     () => ({
       profile,
@@ -313,6 +410,11 @@ export function WorkspaceProvider({
       clearWorkspace,
       clearActivity,
       duplicateProject,
+      activeProjectId,
+      activeProject,
+      setActiveProject,
+      addNoteToProject,
+      removeNoteFromProject,
     }),
     [
       profile,
@@ -331,6 +433,11 @@ export function WorkspaceProvider({
       clearWorkspace,
       clearActivity,
       duplicateProject,
+      activeProjectId,
+      activeProject,
+      setActiveProject,
+      addNoteToProject,
+      removeNoteFromProject,
     ],
   );
 

@@ -112,12 +112,33 @@ export function AIDock({
 }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { profile, recordActivity } = useWorkspace();
+  const { profile, recordActivity, activeProject, activity } = useWorkspace();
   const reduce = useReducedMotion();
 
   const brand =
     profile.brand !== "Your Brand" ? profile.brand : (user?.name ?? "your brand");
-  const context = useWorkspaceContext(user?.name, brand, profile.voice);
+  const projectContextInput = useMemo(
+    () =>
+      activeProject
+        ? {
+            id: activeProject.id,
+            name: activeProject.name,
+            description: activeProject.description,
+            notesCount: activeProject.notes?.length ?? 0,
+            recentActivity: activity
+              .filter((a) => a.projectId === activeProject.id)
+              .slice(0, 5)
+              .map((a) => a.title),
+          }
+        : undefined,
+    [activeProject, activity],
+  );
+  const context = useWorkspaceContext(
+    user?.name,
+    brand,
+    profile.voice,
+    projectContextInput,
+  );
   const currentModule = useMemo(() => moduleFromPath(pathname), [pathname]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);

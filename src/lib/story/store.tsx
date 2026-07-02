@@ -20,6 +20,7 @@ import { assembleStoryBrief, slideCount } from "./composer";
 import type { StoryResult } from "@/lib/ai/types";
 import type { StudioCollection } from "@/hooks/studio";
 import { useGeneration } from "@/hooks/studio/use-generation";
+import { useWorkspace } from "@/lib/workspace/store";
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
@@ -95,7 +96,15 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const [saved, setSaved] = useState<StorySaved[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  // Active project (from workspace) is stamped on new concepts so the
+  // Project Graph and Timeline surface them automatically.
+  const { activeProjectId, recordActivity } = useWorkspace();
+
   const directionSnapshotRef = useRef<StoryDirection>(direction);
+  const activeProjectRef = useRef<string | null>(activeProjectId);
+  useEffect(() => {
+    activeProjectRef.current = activeProjectId;
+  }, [activeProjectId]);
 
   // ── Hydrate ──
   useEffect(() => {
@@ -137,6 +146,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
   const onResult = useCallback(
     (result: StoryResult, _enhancedPrompt: string | null, baseBrief: string) => {
       const snap = directionSnapshotRef.current;
+      const projectId = activeProjectRef.current ?? undefined;
       const concept: StoryConcept = {
         id: uid("story"),
         direction: snap,
@@ -146,8 +156,17 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
         createdAt: Date.now(),
         favorite: false,
         collectionId: null,
+        projectId,
       };
       setConcepts((c) => [concept, ...c]);
+      // Publish an activity ping so the Project timeline updates in place.
+      recordActivity(
+        "story-generated",
+        `Story: ${baseBrief.slice(0, 60)}${baseBrief.length > 60 ? "…" : ""}`,
+        "story",
+        "/story",
+        projectId,
+      );
       setHistory((h) =>
         [
           {
@@ -160,7 +179,7 @@ export function StoryProvider({ children }: { children: React.ReactNode }) {
         ].slice(0, 50),
       );
     },
-    [],
+    [recordActivity],
   );
 
   const { generating, enhancing, error, generate: runGenerate, cancel: cancelGeneration } =

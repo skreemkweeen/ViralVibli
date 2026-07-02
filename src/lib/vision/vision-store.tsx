@@ -13,6 +13,7 @@ import { assemblePrompt, emptyDirection, type Direction } from "./prompt";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
+import { useWorkspace } from "@/lib/workspace/store";
 import {
   addManualReference,
   isConceptPinned,
@@ -54,6 +55,9 @@ export type Concept = {
   direction?: Direction;
   /** Free-form notes the creator attaches after seeing the render. */
   notes?: string;
+  /** Optional project this concept belongs to; set when generated inside a
+   * project workspace so the Project Graph and Timeline surface it. */
+  projectId?: string;
 };
 
 export type HistoryEntry = {
@@ -215,10 +219,19 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
 
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
 
+  // Active project (from workspace) is stamped on new concepts so the
+  // Project Graph and Timeline surface them automatically.
+  const { activeProjectId, recordActivity } = useWorkspace();
+  const activeProjectRef = useRef<string | null>(activeProjectId);
+  useEffect(() => {
+    activeProjectRef.current = activeProjectId;
+  }, [activeProjectId]);
+
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
     (result: ImageResult, finalPrompt: string | null, basePrompt: string) => {
       const snap = directionSnapshotRef.current;
+      const projectId = activeProjectRef.current ?? undefined;
       const made: Concept[] = result.images.map((img, i) => ({
         id: uid("concept"),
         prompt: basePrompt,
@@ -235,9 +248,17 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
         favorite: false,
         collectionId: null,
         direction: snap,
+        projectId,
       }));
 
       setConcepts((c) => [...made, ...c]);
+      recordActivity(
+        "vision-generated",
+        `Image: ${basePrompt.slice(0, 60)}${basePrompt.length > 60 ? "…" : ""}`,
+        "vision",
+        "/vision",
+        projectId,
+      );
       setHistory((h) =>
         [
           {
@@ -251,7 +272,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
         ].slice(0, 50),
       );
     },
-    [],
+    [recordActivity],
   );
 
   const {

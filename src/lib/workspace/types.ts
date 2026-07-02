@@ -12,12 +12,19 @@ export type ProjectItemRef = {
   title: string;
 };
 
+export type ProjectNote = {
+  id: string;
+  body: string;
+  createdAt: number;
+};
+
 export type Project = {
   id: string;
   name: string;
   description?: string;
   color: ProjectColor;
   items: ProjectItemRef[];
+  notes?: ProjectNote[];
   createdAt: number;
   updatedAt: number;
 };
@@ -33,9 +40,12 @@ export type CreatorProfile = {
 
 export type ActivityType =
   | "project-created"
+  | "project-updated"
   | "prompt-saved"
   | "story-generated"
   | "vision-generated"
+  | "moodboard-updated"
+  | "note-added"
   | "chat-sent";
 
 export type ActivityItem = {
@@ -45,6 +55,8 @@ export type ActivityItem = {
   moduleId: string;
   href?: string;
   createdAt: number;
+  /** Optional project this event belongs to. Enables per-project timelines. */
+  projectId?: string;
 };
 
 export const PROJECT_COLORS: Record<

@@ -271,16 +271,22 @@ export function ProjectsView() {
                         </button>
                       </div>
 
-                      <div className={`mb-3 size-8 rounded-lg ${PROJECT_COLORS[project.color].dot} opacity-80`} />
+                      <Link
+                        href={`/projects/${project.id}`}
+                        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-lg"
+                        aria-label={`Open ${project.name}`}
+                      >
+                        <div className={`mb-3 size-8 rounded-lg ${PROJECT_COLORS[project.color].dot} opacity-80`} />
 
-                      <h3 className="text-[15px] font-semibold text-ink">
-                        {project.name}
-                      </h3>
-                      {project.description && (
-                        <p className="mt-1 line-clamp-2 text-[13px] text-muted">
-                          {project.description}
-                        </p>
-                      )}
+                        <h3 className="text-[15px] font-semibold text-ink">
+                          {project.name}
+                        </h3>
+                        {project.description && (
+                          <p className="mt-1 line-clamp-2 text-[13px] text-muted">
+                            {project.description}
+                          </p>
+                        )}
+                      </Link>
 
                       <div className="mt-4 flex items-center gap-3 text-[12px] text-faint">
                         <span>

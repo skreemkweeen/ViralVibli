@@ -93,14 +93,14 @@ describe("WorkspaceProvider", () => {
     expect(result.current.projects.map((p) => p.id)).toEqual([keptId]);
   });
 
-  it("caps activity at 50 items", async () => {
+  it("caps activity at 80 items", async () => {
     const { result } = renderHook(() => useWorkspace(), { wrapper });
     await act(async () => {
       await Promise.resolve();
     });
 
     act(() => {
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 100; i++) {
         result.current.recordActivity(
           "chat-sent",
           `Msg ${i}`,
@@ -110,7 +110,7 @@ describe("WorkspaceProvider", () => {
       }
     });
 
-    expect(result.current.activity).toHaveLength(50);
+    expect(result.current.activity).toHaveLength(80);
   });
 
   it("throws when useWorkspace is used outside a provider", () => {

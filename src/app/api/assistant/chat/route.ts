@@ -57,7 +57,25 @@ function buildSystemPrompt(ctx: WorkspaceContext | undefined): string {
     lines.push(``, `The creator has ${ctx.vaultCount} prompts saved in their Vault.`);
   }
 
-  return lines.join("\n");
+  if (ctx?.project) {
+    const p = ctx.project;
+    lines.push(
+      "",
+      "## Active Project",
+      `Name: ${p.name}`,
+      p.description ? `Focus: ${p.description}` : "",
+      `Assets: ${p.storiesCount} stories, ${p.imagesCount} images, ${p.promptsCount} prompts, ${p.moodboardCount} moodboard refs, ${p.notesCount} notes`,
+    );
+    if (p.recentActivity && p.recentActivity.length > 0) {
+      lines.push("Recent activity:");
+      for (const a of p.recentActivity) lines.push(`- ${a}`);
+    }
+    lines.push(
+      "When the creator says 'this project' or asks for the next asset, default to the Active Project above unless they specify otherwise.",
+    );
+  }
+
+  return lines.filter((l) => l !== "").join("\n");
 }
 
 function localStream(messages: AssistantMessage[], signal?: AbortSignal): Response {

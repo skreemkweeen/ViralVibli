@@ -36,6 +36,12 @@ export type CommandContext = {
   clearActivity: () => void;
   duplicateActiveProject: () => void;
   closePalette: () => void;
+  /**
+   * The project currently in focus. Project-aware commands short-circuit
+   * when this is null and get filtered out of the palette instead of
+   * silently misfiring.
+   */
+  activeProject: { id: string; name: string; description?: string } | null;
 };
 
 export type CommandGroupKey =
@@ -43,7 +49,8 @@ export type CommandGroupKey =
   | "navigate"
   | "workspace"
   | "search"
-  | "system";
+  | "system"
+  | "project";
 
 export type PaletteCommand = {
   id: string;
@@ -53,6 +60,10 @@ export type PaletteCommand = {
   group: CommandGroupKey;
   icon?: ReactNode; // supplied by the palette shell
   shortcut?: string[]; // ["G", "V"] shows as `G V`
+  /** When true, the palette only surfaces this command while a project is
+   * active. Prevents dead options like "Summarize this project" when there's
+   * no project to summarize. */
+  requiresProject?: boolean;
   run: (ctx: CommandContext) => void;
 };
 
@@ -264,6 +275,95 @@ export const COMMANDS: PaletteCommand[] = [
     group: "workspace",
     run: (ctx) => {
       ctx.clearActivity();
+      ctx.closePalette();
+    },
+  },
+
+  // ─── Project (only shown when a project is active) ──────────────────
+  {
+    id: "cmd.project.open",
+    title: "Open current project",
+    subtitle: "Jump to the active Project Workspace",
+    keywords: ["project", "workspace", "open", "goto"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.navigate(`/projects/${ctx.activeProject.id}`);
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.timeline",
+    title: "Show project timeline",
+    subtitle: "Every event scoped to this project",
+    keywords: ["timeline", "history", "activity", "project"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.navigate(`/projects/${ctx.activeProject.id}?tab=timeline`);
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.graph",
+    title: "Show project graph",
+    subtitle: "See relationships across every asset",
+    keywords: ["graph", "map", "relationships", "project"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.navigate(`/projects/${ctx.activeProject.id}?tab=graph`);
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.summarize",
+    title: "Summarize this project",
+    subtitle: "Ask AI what's been made and what's missing",
+    keywords: ["summarize", "recap", "review", "project"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.openAIDock({
+        prefill: `Summarise the “${ctx.activeProject.name}” project so far. What's the shape, what's missing, and what's a strong next asset to make?`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.next-deliverable",
+    title: "Generate next deliverable",
+    subtitle: "Ask AI to propose the highest-leverage next asset",
+    keywords: ["next", "propose", "suggest", "deliverable", "project"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.openAIDock({
+        prefill: `Given the project “${ctx.activeProject.name}”, propose the single most valuable next asset to create. Be specific about type, medium, and brief.`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.find-unused",
+    title: "Find unused assets",
+    subtitle: "Prompts and images this project hasn't shipped",
+    keywords: ["unused", "orphan", "reuse", "project"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      if (!ctx.activeProject) return;
+      ctx.openAIDock({
+        prefill: `Look at project “${ctx.activeProject.name}” and identify any unused prompts or images that could be repurposed.`,
+        autoSend: true,
+      });
       ctx.closePalette();
     },
   },

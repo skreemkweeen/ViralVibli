@@ -19,6 +19,7 @@ import type {
 } from "./types";
 import { SEED_PROMPTS } from "./data";
 import { useGeneration } from "@/hooks/studio/use-generation";
+import { useWorkspace } from "@/lib/workspace/store";
 
 const KEY = {
   prompts: "vv-vault-prompts",
@@ -144,6 +145,10 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     jobsBase: "/api/jobs",
   });
 
+  // Active project (from workspace) is stamped on newly saved prompts so
+  // they surface on the Project Overview and Graph.
+  const { activeProjectId, recordActivity } = useWorkspace();
+
   // ── CRUD ──────────────────────────────────────────────────────────────────────
   const addPrompt = useCallback(
     (
@@ -154,6 +159,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
     ): string => {
       const id = uid("vlt");
       const now = Date.now();
+      const projectId = data.projectId ?? activeProjectId ?? undefined;
       const entry: PromptEntry = {
         ...data,
         id,
@@ -164,11 +170,19 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
         versions: [],
         createdAt: now,
         updatedAt: now,
+        projectId,
       };
       setPrompts((p) => [entry, ...p]);
+      recordActivity(
+        "prompt-saved",
+        `Prompt: ${data.title}`,
+        "vault",
+        "/vault",
+        projectId,
+      );
       return id;
     },
-    [],
+    [activeProjectId, recordActivity],
   );
 
   const updatePrompt = useCallback(

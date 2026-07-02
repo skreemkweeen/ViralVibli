@@ -48,6 +48,9 @@ export type StoryConcept = {
   favorite: boolean;
   collectionId: string | null;
   label?: string;
+  /** Optional project this concept belongs to; set when generated inside a
+   * project workspace so the Project Graph can surface it. */
+  projectId?: string;
 };
 
 export type StoryHistoryEntry = {
