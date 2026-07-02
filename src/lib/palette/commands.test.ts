@@ -6,7 +6,8 @@ describe("commands registry", () => {
     const ids = COMMANDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) {
-      expect(id).toMatch(/^cmd\.[a-z0-9-]+\.[a-z0-9-]+$/);
+      // Allow dot-nested namespaces (cmd.project.health.explain), min two segments.
+      expect(id).toMatch(/^cmd(\.[a-z0-9-]+){2,}$/);
     }
   });
 
@@ -32,6 +33,80 @@ describe("commands registry", () => {
     for (const c of projectCommands) {
       expect(c.requiresProject).toBe(true);
     }
+  });
+
+  it("ships the seven health-driven intelligence commands", () => {
+    const expectedIds = [
+      "cmd.project.health.explain",
+      "cmd.project.health.missing",
+      "cmd.project.health.duplicates",
+      "cmd.project.health.reuse",
+      "cmd.project.health.improve-score",
+      "cmd.project.health.blockers",
+      "cmd.project.health.generate-next",
+    ];
+    for (const id of expectedIds) {
+      expect(COMMANDS_BY_ID.get(id), `missing ${id}`).toBeDefined();
+    }
+  });
+
+  it("intelligence commands short-circuit when there is no active project", () => {
+    // Every project command guards on ctx.activeProject before touching AI.
+    // Verify by dispatching each with a null active project + null intelligence
+    // and asserting nothing gets called on the dock.
+    const dockCalls: unknown[] = [];
+    const ctx = {
+      navigate: () => {},
+      setPrefill: () => {},
+      openAIDock: (opts: unknown) => dockCalls.push(opts),
+      pushChain: () => {},
+      setTheme: () => {},
+      clearActivity: () => {},
+      duplicateActiveProject: () => {},
+      closePalette: () => {},
+      activeProject: null,
+      projectIntelligence: null,
+    };
+    for (const c of COMMANDS.filter((c) => c.group === "project")) {
+      c.run(ctx);
+    }
+    expect(dockCalls).toHaveLength(0);
+  });
+
+  it("intelligence commands consume the summary struct without recomputing", () => {
+    // When we hand them a fresh intelligence summary, they must render its
+    // fields into the AI Dock prefill verbatim — never re-derive.
+    const dockCalls: Array<{ prefill?: string }> = [];
+    const ctx = {
+      navigate: () => {},
+      setPrefill: () => {},
+      openAIDock: (opts: { prefill?: string }) => dockCalls.push(opts),
+      pushChain: () => {},
+      setTheme: () => {},
+      clearActivity: () => {},
+      duplicateActiveProject: () => {},
+      closePalette: () => {},
+      activeProject: { id: "p", name: "Test", description: "d" },
+      projectIntelligence: {
+        projectId: "p",
+        projectName: "Test",
+        completion: 72,
+        score: 88,
+        momentum: { recent: 4, prior: 2, trend: "up" as const },
+        nextStep: "Compose an image next.",
+        missing: [{ kind: "image", count: 2, message: "Add 2 images" }],
+        unused: { prompts: ["Foo prompt"], images: [] },
+        reuse: [{ a: "P1", b: "P2", overlap: 0.42 }],
+        duplicates: [{ a: "D1", b: "D2", overlap: 0.71 }],
+        dependencies: [],
+        recommendations: [],
+      },
+    };
+    const explain = COMMANDS_BY_ID.get("cmd.project.health.explain")!;
+    explain.run(ctx);
+    expect(dockCalls[0].prefill).toContain("72%");
+    expect(dockCalls[0].prefill).toContain("88");
+    expect(dockCalls[0].prefill).toContain("up");
   });
 });
 

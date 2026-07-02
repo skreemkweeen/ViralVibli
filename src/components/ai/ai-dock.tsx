@@ -27,6 +27,10 @@ import {
 import { useWorkspaceContext } from "@/lib/context/workspace";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { useWorkspace } from "@/lib/workspace/store";
+import {
+  useProjectIntelligence,
+  summariseIntelligence,
+} from "@/hooks/use-project-intelligence";
 import { appModules } from "@/lib/modules/registry";
 import { tracker } from "@/lib/observability";
 
@@ -133,11 +137,18 @@ export function AIDock({
         : undefined,
     [activeProject, activity],
   );
+  // Shared intelligence — same struct the palette + Project Workspace use.
+  const intelligence = useProjectIntelligence(activeProject?.id ?? null);
+  const intelligenceSummary = useMemo(
+    () => summariseIntelligence(intelligence),
+    [intelligence],
+  );
   const context = useWorkspaceContext(
     user?.name,
     brand,
     profile.voice,
     projectContextInput,
+    intelligenceSummary,
   );
   const currentModule = useMemo(() => moduleFromPath(pathname), [pathname]);
 

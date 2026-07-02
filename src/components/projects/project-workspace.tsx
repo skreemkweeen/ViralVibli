@@ -37,7 +37,6 @@ import {
 } from "@phosphor-icons/react";
 import { useWorkspace } from "@/lib/workspace/store";
 import { PROJECT_COLORS } from "@/lib/workspace/types";
-import { readProjectSources } from "@/lib/projects/sources";
 import {
   buildProjectGraph,
   connectedIds,
@@ -46,11 +45,9 @@ import {
   type ProjectNodeKind,
 } from "@/lib/projects/graph";
 import type { ProjectGraphSources } from "@/lib/projects/graph";
-import {
-  computeProjectHealth,
-  type ProjectHealth,
-} from "@/lib/projects/intelligence";
-import { buildHeatmap, type Heatmap } from "@/lib/projects/heatmap";
+import { useProjectIntelligence } from "@/hooks/use-project-intelligence";
+import type { ProjectHealth } from "@/lib/projects/intelligence";
+import type { Heatmap } from "@/lib/projects/heatmap";
 import {
   ProjectHealthPanel,
   ProjectRecommendations,
@@ -96,7 +93,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   } = useWorkspace();
   const reduce = useReducedMotion();
   const [tab, setTab] = useState<Tab>("overview");
-  const [sources, setSources] = useState<ProjectGraphSources>({});
   const [noteDraft, setNoteDraft] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState("");
@@ -111,9 +107,11 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     // Register this as the active project so studios pick it up
     if (project && activeProjectId !== project.id) setActiveProject(project.id);
     if (project) setName(project.name);
-    setSources(readProjectSources(projectId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, project?.id]);
+  }, [hydrated, project, activeProjectId, setActiveProject]);
+
+  // ── Shared intelligence — same struct the AI Dock and palette consume.
+  const intelligence = useProjectIntelligence(projectId);
+  const { sources, health, heatmap } = intelligence;
 
   // Build graph once project + sources are ready
   const graph: ProjectGraph = useMemo(() => {
@@ -148,32 +146,6 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
       activity.filter((a) => !a.projectId || a.projectId === project?.id),
     [activity, project?.id],
   );
-
-  // ── Project intelligence: pure heuristics fed by all persisted state.
-  const health: ProjectHealth | null = useMemo(() => {
-    if (!project) return null;
-    return computeProjectHealth(project, {
-      ...sources,
-      activity: activity.map((a) => ({
-        id: a.id,
-        title: a.title,
-        createdAt: a.createdAt,
-        projectId: a.projectId,
-        type: a.type,
-      })),
-    });
-  }, [project, sources, activity]);
-
-  const heatmap: Heatmap | null = useMemo(() => {
-    if (!project) return null;
-    return buildHeatmap(
-      activity.map((a) => ({
-        createdAt: a.createdAt,
-        projectId: a.projectId,
-      })),
-      project.id,
-    );
-  }, [project, activity]);
 
   if (!hydrated) {
     return (

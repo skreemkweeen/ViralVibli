@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ProjectIntelligenceSummary } from "@/hooks/use-project-intelligence";
 
 export type WorkspacePrompt = {
   title: string;
@@ -29,6 +30,11 @@ export type WorkspaceContext = {
   /** The project the creator is actively working on — informs the AI system
    * message so it can answer with the right scope by default. */
   project?: WorkspaceProjectContext;
+  /** Deterministic Project Intelligence (completion, score, momentum,
+   * missing, duplicates, reuse, dependencies, next step, recommendations).
+   * Computed once in `useProjectIntelligence` and passed here so the AI
+   * system prompt can reason about the exact same numbers the UI shows. */
+  projectIntelligence?: ProjectIntelligenceSummary;
 };
 
 type StoredPrompt = {
@@ -78,10 +84,17 @@ export function useWorkspaceContext(
   brand?: string,
   voice?: string,
   project?: ActiveProjectInput,
+  projectIntelligence?: ProjectIntelligenceSummary | null,
 ): WorkspaceContext {
   const [ctx, setCtx] = useState<WorkspaceContext>({ userName, brand, voice });
   const projectSignature = project
     ? `${project.id}:${project.name}:${project.description ?? ""}:${project.notesCount ?? 0}`
+    : "";
+  // Signature is intentionally coarse — completion + momentum trend +
+  // recommendation count captures the changes that would rewrite the
+  // system prompt without thrashing state on every render.
+  const intelligenceSignature = projectIntelligence
+    ? `${projectIntelligence.completion}:${projectIntelligence.score}:${projectIntelligence.momentum.trend}:${projectIntelligence.recommendations.length}:${projectIntelligence.missing.length}:${projectIntelligence.duplicates.length}`
     : "";
 
   useEffect(() => {
@@ -129,12 +142,13 @@ export function useWorkspaceContext(
         recentPrompts: recent.length ? recent : undefined,
         vaultCount: prompts.length,
         project: projectContext,
+        projectIntelligence: projectIntelligence ?? undefined,
       });
     } catch {
       setCtx({ userName, brand, voice });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userName, brand, voice, projectSignature]);
+  }, [userName, brand, voice, projectSignature, intelligenceSignature]);
 
   return ctx;
 }

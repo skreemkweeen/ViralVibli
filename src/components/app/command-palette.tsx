@@ -40,6 +40,10 @@ import { appModules, type Icon } from "@/lib/modules/registry";
 import { useTheme } from "./theme-provider";
 import { openAIDock } from "./app-shell";
 import { useWorkspace } from "@/lib/workspace/store";
+import {
+  useProjectIntelligence,
+  summariseIntelligence,
+} from "@/hooks/use-project-intelligence";
 import { routeIntents, type StudioId } from "@/lib/palette/route-intent";
 import {
   COMMANDS,
@@ -300,6 +304,14 @@ export function CommandPalette({
     duplicateProject,
     activeProject,
   } = useWorkspace();
+  // Shared intelligence — same struct the AI Dock consumes. Read even when
+  // no palette is open so section rendering can react to it without a
+  // late-mount reload.
+  const intelligence = useProjectIntelligence(activeProject?.id ?? null);
+  const projectIntelligence = useMemo(
+    () => summariseIntelligence(intelligence),
+    [intelligence],
+  );
   const reduce = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -355,12 +367,14 @@ export function CommandPalette({
               description: activeProject.description,
             }
           : null,
+        projectIntelligence,
       };
       cmd.run(ctx);
       setHistory((h) => recordUse(h, cmd.id));
     },
     [
       activeProject,
+      projectIntelligence,
       router,
       setPrefill,
       setChain,

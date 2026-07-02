@@ -18,6 +18,7 @@
 
 import type { ReactNode } from "react";
 import type { Chain } from "./types";
+import type { ProjectIntelligenceSummary } from "@/hooks/use-project-intelligence";
 
 export type StudioSlug =
   | "vision"
@@ -42,6 +43,12 @@ export type CommandContext = {
    * silently misfiring.
    */
   activeProject: { id: string; name: string; description?: string } | null;
+  /**
+   * Deterministic intelligence for the active project — completion %,
+   * missing deliverables, duplicates, reuse, next step, etc. Commands
+   * that reason about health read from here instead of re-deriving.
+   */
+  projectIntelligence: ProjectIntelligenceSummary | null;
 };
 
 export type CommandGroupKey =
@@ -362,6 +369,175 @@ export const COMMANDS: PaletteCommand[] = [
       if (!ctx.activeProject) return;
       ctx.openAIDock({
         prefill: `Look at project “${ctx.activeProject.name}” and identify any unused prompts or images that could be repurposed.`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+
+  // ─── Project Intelligence — deterministic health-driven commands.
+  //     Every one of these reads from the shared ProjectIntelligenceSummary
+  //     so the numbers match whatever the workspace UI is showing.
+  {
+    id: "cmd.project.health.explain",
+    title: "Explain project health",
+    subtitle: "Why the completion % + creative score are what they are",
+    keywords: ["health", "completion", "score", "explain", "why", "status"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const nums = pi
+        ? `Current numbers: ${pi.completion}% completion, ${pi.score} creative score, momentum ${pi.momentum.trend} (${pi.momentum.recent} vs ${pi.momentum.prior}).`
+        : "";
+      ctx.openAIDock({
+        prefill:
+          `Walk me through the health of “${p.name}”. Explain what's driving completion, creative score, and momentum. Point to specific missing pieces, duplicate assets, or reuse opportunities. Keep it grounded in the numbers.\n\n${nums}`.trim(),
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.missing",
+    title: "Show missing deliverables",
+    subtitle: "Baseline gaps to close before shipping",
+    keywords: ["missing", "gap", "deliverable", "baseline", "todo"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const list =
+        pi && pi.missing.length > 0
+          ? pi.missing.map((m) => `- ${m.message}`).join("\n")
+          : "- (Baseline is already covered — suggest 3 stretch deliverables instead)";
+      ctx.openAIDock({
+        prefill:
+          `For “${p.name}”, here are the baseline gaps I need to close:\n${list}\n\nFor each gap, suggest one concrete next asset to make (concept, brief, and platform). If the baseline is covered, propose 3 strong stretch deliverables.`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.duplicates",
+    title: "Show duplicate prompts",
+    subtitle: "Vault entries that overlap ≥65%",
+    keywords: ["duplicate", "dedupe", "merge", "prompt", "vault"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const list =
+        pi && pi.duplicates.length > 0
+          ? pi.duplicates
+              .map(
+                (d) =>
+                  `- "${d.a}" ↔ "${d.b}" (${Math.round(d.overlap * 100)}% overlap)`,
+              )
+              .join("\n")
+          : "- (No duplicates over 65% overlap. Great.)";
+      ctx.openAIDock({
+        prefill:
+          `In “${p.name}”, these prompt pairs are duplicates:\n${list}\n\nProduce one canonical merged prompt for each pair, keeping the strongest phrasing from both. If there are no duplicates, tell me and suggest what to Vault next.`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.reuse",
+    title: "Show reuse opportunities",
+    subtitle: "Vault entries that share 35–65% of tokens",
+    keywords: ["reuse", "similar", "prompt", "consolidate"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const list =
+        pi && pi.reuse.length > 0
+          ? pi.reuse
+              .map(
+                (r) =>
+                  `- "${r.a}" ↔ "${r.b}" (${Math.round(r.overlap * 100)}% overlap)`,
+              )
+              .join("\n")
+          : "- (Nothing overlaps enough to consolidate right now.)";
+      ctx.openAIDock({
+        prefill:
+          `In “${p.name}”, these prompt pairs are close enough to share a block:\n${list}\n\nFor each pair, propose one shared block that could be reused, plus a differentiator sentence per prompt. If there's nothing to share, tell me.`,
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.improve-score",
+    title: "Improve creative score",
+    subtitle: "AI-picked plays to raise the score",
+    keywords: ["score", "improve", "raise", "quality"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const state = pi
+        ? `Current: ${pi.completion}% complete, score ${pi.score}, momentum ${pi.momentum.trend}. Missing: ${pi.missing.map((m) => m.kind).join(", ") || "nothing"}. Duplicates: ${pi.duplicates.length}. Unused prompts: ${pi.unused.prompts.length}. Unused images: ${pi.unused.images.length}.`
+        : "";
+      ctx.openAIDock({
+        prefill:
+          `For “${p.name}”, give me 3 concrete plays I can run this week to raise the creative score. Each should be small enough to finish in under an hour and target a specific weakness.\n\n${state}`.trim(),
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.blockers",
+    title: "Find blockers",
+    subtitle: "What's actually stopping progress",
+    keywords: ["blocker", "stuck", "problem", "issue", "friction"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const state = pi
+        ? `Signals: momentum is ${pi.momentum.trend} (${pi.momentum.recent} this week vs ${pi.momentum.prior} last). Missing: ${pi.missing.map((m) => m.message).join("; ") || "none"}. Duplicates: ${pi.duplicates.length}. Warnings: ${pi.recommendations.filter((r) => r.severity === "warning").length}.`
+        : "";
+      ctx.openAIDock({
+        prefill:
+          `In “${p.name}”, what's blocking progress right now? Reason from the signals below and name the single most important friction to remove first.\n\n${state}`.trim(),
+        autoSend: true,
+      });
+      ctx.closePalette();
+    },
+  },
+  {
+    id: "cmd.project.health.generate-next",
+    title: "Generate next deliverable",
+    subtitle: "Rule-picked next step, then AI expands it into a brief",
+    keywords: ["next", "generate", "brief", "produce", "deliverable"],
+    group: "project",
+    requiresProject: true,
+    run: (ctx) => {
+      const p = ctx.activeProject;
+      const pi = ctx.projectIntelligence;
+      if (!p) return;
+      const step = pi?.nextStep ?? "the next logical asset";
+      ctx.openAIDock({
+        prefill:
+          `The rule-picked next step for “${p.name}” is: ${step}\n\nExpand it into a full brief I can execute — objective, deliverable, platform, tone, and a 3-bullet outline. Reference existing assets when relevant.`,
         autoSend: true,
       });
       ctx.closePalette();

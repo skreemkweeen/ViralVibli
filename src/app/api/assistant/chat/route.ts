@@ -75,6 +75,75 @@ function buildSystemPrompt(ctx: WorkspaceContext | undefined): string {
     );
   }
 
+  // Deterministic Project Intelligence — same numbers the workspace UI
+  // shows. Rendering them here means "why is completion 70%?" or
+  // "what's blocking me?" resolves against the same source of truth.
+  if (ctx?.projectIntelligence) {
+    const pi = ctx.projectIntelligence;
+    const trendWord =
+      pi.momentum.trend === "up"
+        ? "trending up"
+        : pi.momentum.trend === "down"
+          ? "cooling"
+          : "steady";
+    lines.push(
+      "",
+      "## Project Intelligence",
+      `Completion: ${pi.completion}% · Creative score: ${pi.score} · Momentum: ${trendWord} (${pi.momentum.recent} this week vs ${pi.momentum.prior} last week)`,
+      `Next step (rule-picked): ${pi.nextStep}`,
+    );
+    if (pi.missing.length > 0) {
+      lines.push(
+        `Missing deliverables: ${pi.missing.map((m) => m.message).join("; ")}`,
+      );
+    }
+    if (pi.duplicates.length > 0) {
+      lines.push(
+        `Duplicate prompts (≥65% overlap): ${pi.duplicates
+          .slice(0, 3)
+          .map((d) => `"${d.a}" ↔ "${d.b}" (${Math.round(d.overlap * 100)}%)`)
+          .join(", ")}`,
+      );
+    }
+    if (pi.reuse.length > 0) {
+      lines.push(
+        `Reuse opportunities (35-65% overlap): ${pi.reuse
+          .slice(0, 3)
+          .map((r) => `"${r.a}" ↔ "${r.b}"`)
+          .join(", ")}`,
+      );
+    }
+    if (pi.unused.prompts.length > 0) {
+      lines.push(
+        `Unused prompts (never referenced): ${pi.unused.prompts.slice(0, 5).map((t) => `"${t}"`).join(", ")}`,
+      );
+    }
+    if (pi.unused.images.length > 0) {
+      lines.push(
+        `Images without a story: ${pi.unused.images.slice(0, 5).map((t) => `"${t}"`).join(", ")}`,
+      );
+    }
+    if (pi.dependencies.length > 0) {
+      lines.push(
+        `Asset dependencies: ${pi.dependencies
+          .slice(0, 4)
+          .map((d) => `${d.from} → ${d.to} (${d.reason})`)
+          .join("; ")}`,
+      );
+    }
+    if (pi.recommendations.length > 0) {
+      lines.push("Observations:");
+      for (const r of pi.recommendations) {
+        lines.push(
+          `- [${r.severity}] ${r.headline}${r.detail ? ` — ${r.detail}` : ""}`,
+        );
+      }
+    }
+    lines.push(
+      "When asked about health, completion, momentum, blockers, duplicates, or the next step, cite the numbers above verbatim — never re-derive.",
+    );
+  }
+
   return lines.filter((l) => l !== "").join("\n");
 }
 
