@@ -41,6 +41,32 @@ import {
   type LightingPresetId,
   type LightingSetup,
 } from "./lighting";
+import {
+  addShotReference as addShotRef,
+  newShot,
+  pushVersion as pushShotVersion,
+  removeShotReference as removeShotRef,
+  restoreVersion as restoreShotVersion,
+  setShotApproval as setShotApprovalFn,
+  setShotStatus as setShotStatusFn,
+  snapshotVersion,
+  updateShotDirection as updateShotDir,
+  type Shot,
+  type ShotApproval,
+  type ShotReference,
+  type ShotStatus,
+  type ShotType,
+} from "./shots";
+import {
+  buildCampaignPlan,
+  type CampaignPlan,
+} from "./campaign-plans";
+import {
+  defaultBatchConfig,
+  generateBatch,
+  type BatchConfig,
+  type BatchVariant,
+} from "./batch";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -191,6 +217,37 @@ type VisionState = {
   updateLightConfig: (role: LightRole, patch: Partial<Light>) => void;
   applyLightingPreset: (id: LightingPresetId) => void;
   resetLighting: () => void;
+
+  // ── Pass B.3 additions ──
+  /** All shots owned by the active project. */
+  shots: Shot[];
+  createShot: (type: ShotType, name?: string) => string;
+  updateShot: (id: string, patch: Partial<Shot>) => void;
+  removeShot: (id: string) => void;
+  renameShot: (id: string, name: string) => void;
+  patchShotDirection: (id: string, patch: Partial<Direction>) => void;
+  snapshotShotVersion: (id: string, label?: string, note?: string) => void;
+  restoreShotVersionById: (id: string, versionId: string) => void;
+  setShotStatus: (id: string, status: ShotStatus) => void;
+  setShotApproval: (id: string, approval: ShotApproval) => void;
+  addReferenceToShot: (id: string, ref: Omit<ShotReference, "id" | "createdAt">) => void;
+  removeReferenceFromShot: (id: string, refId: string) => void;
+  /** Push the current builder direction + lighting into a new shot */
+  saveCurrentAsShot: (type: ShotType, name?: string) => string;
+  /** Load a shot's direction + lighting back into the builder */
+  loadShot: (id: string) => void;
+
+  /** Campaign plans built for the active project. */
+  campaigns: CampaignPlan[];
+  createCampaign: (recipeId: string) => string | null;
+  removeCampaign: (id: string) => void;
+
+  /** Batch generator config + last-generated variants */
+  batchConfig: BatchConfig;
+  updateBatchConfig: (patch: Partial<BatchConfig>) => void;
+  batchVariants: BatchVariant[];
+  runBatch: () => void;
+  clearBatch: () => void;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -210,6 +267,13 @@ const KEY = {
   // Pass B.2 — lighting rig is per project.
   lightingDefault: "vv-vision-lighting-default",
   lightingProject: (id: string) => `vv-vision-lighting-${id}`,
+  // Pass B.3 — shots, campaigns, batch config are per project.
+  shotsDefault: "vv-vision-shots-default",
+  shotsProject: (id: string) => `vv-vision-shots-${id}`,
+  campaignsDefault: "vv-vision-campaigns-default",
+  campaignsProject: (id: string) => `vv-vision-campaigns-${id}`,
+  batchConfigDefault: "vv-vision-batch-default",
+  batchConfigProject: (id: string) => `vv-vision-batch-${id}`,
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -246,6 +310,12 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [lightingSetup, setLightingSetup] = useState<LightingSetup>(
     emptyLightingSetup(),
   );
+  const [shots, setShots] = useState<Shot[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignPlan[]>([]);
+  const [batchConfig, setBatchConfig] = useState<BatchConfig>(
+    defaultBatchConfig(),
+  );
+  const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -368,6 +438,60 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       // storage unavailable
     }
   }, [lightingSetup, activeProjectId, hydrated]);
+
+  // Shots / campaigns / batch config all follow the same per-project pattern.
+  useEffect(() => {
+    if (!hydrated) return;
+    const shotsKey = activeProjectId
+      ? KEY.shotsProject(activeProjectId)
+      : KEY.shotsDefault;
+    const campaignsKey = activeProjectId
+      ? KEY.campaignsProject(activeProjectId)
+      : KEY.campaignsDefault;
+    const batchKey = activeProjectId
+      ? KEY.batchConfigProject(activeProjectId)
+      : KEY.batchConfigDefault;
+    setShots(load<Shot[]>(shotsKey, []));
+    setCampaigns(load<CampaignPlan[]>(campaignsKey, []));
+    setBatchConfig(load<BatchConfig>(batchKey, defaultBatchConfig()));
+    setBatchVariants([]);
+  }, [activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.shotsProject(activeProjectId)
+      : KEY.shotsDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(shots));
+    } catch {
+      // storage unavailable
+    }
+  }, [shots, activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.campaignsProject(activeProjectId)
+      : KEY.campaignsDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(campaigns));
+    } catch {
+      // storage unavailable
+    }
+  }, [campaigns, activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.batchConfigProject(activeProjectId)
+      : KEY.batchConfigDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(batchConfig));
+    } catch {
+      // storage unavailable
+    }
+  }, [batchConfig, activeProjectId, hydrated]);
 
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
@@ -550,6 +674,154 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     () => setLightingSetup(emptyLightingSetup()),
     [],
   );
+
+  // ── Pass B.3 actions ──
+  const createShot = useCallback(
+    (type: ShotType, name?: string): string => {
+      const id = uid("shot");
+      setShots((prev) => {
+        const shot = newShot(id, type, direction, lightingSetup);
+        return [{ ...shot, name: name ?? shot.name }, ...prev];
+      });
+      return id;
+    },
+    [direction, lightingSetup],
+  );
+
+  const saveCurrentAsShot = useCallback(
+    (type: ShotType, name?: string): string => createShot(type, name),
+    [createShot],
+  );
+
+  const updateShot = useCallback((id: string, patch: Partial<Shot>) => {
+    setShots((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...patch, updatedAt: Date.now() } : s)),
+    );
+  }, []);
+
+  const removeShot = useCallback((id: string) => {
+    setShots((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const renameShot = useCallback((id: string, name: string) => {
+    setShots((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, name: name.trim() || s.name, updatedAt: Date.now() } : s,
+      ),
+    );
+  }, []);
+
+  const patchShotDirection = useCallback(
+    (id: string, patch: Partial<Direction>) => {
+      setShots((prev) =>
+        prev.map((s) => (s.id === id ? updateShotDir(s, patch) : s)),
+      );
+    },
+    [],
+  );
+
+  const snapshotShotVersion = useCallback(
+    (id: string, label?: string, note?: string) => {
+      setShots((prev) =>
+        prev.map((s) => {
+          if (s.id !== id) return s;
+          const version = snapshotVersion(uid("ver"), s, label, note);
+          return pushShotVersion(s, version);
+        }),
+      );
+    },
+    [],
+  );
+
+  const restoreShotVersionById = useCallback(
+    (id: string, versionId: string) => {
+      setShots((prev) =>
+        prev.map((s) => (s.id === id ? restoreShotVersion(s, versionId) : s)),
+      );
+    },
+    [],
+  );
+
+  const setShotStatus = useCallback((id: string, status: ShotStatus) => {
+    setShots((prev) =>
+      prev.map((s) => (s.id === id ? setShotStatusFn(s, status) : s)),
+    );
+  }, []);
+
+  const setShotApproval = useCallback((id: string, approval: ShotApproval) => {
+    setShots((prev) =>
+      prev.map((s) => (s.id === id ? setShotApprovalFn(s, approval) : s)),
+    );
+  }, []);
+
+  const addReferenceToShot = useCallback(
+    (id: string, ref: Omit<ShotReference, "id" | "createdAt">) => {
+      setShots((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? addShotRef(s, { ...ref, id: uid("ref"), createdAt: Date.now() })
+            : s,
+        ),
+      );
+    },
+    [],
+  );
+
+  const removeReferenceFromShot = useCallback(
+    (id: string, refId: string) => {
+      setShots((prev) =>
+        prev.map((s) => (s.id === id ? removeShotRef(s, refId) : s)),
+      );
+    },
+    [],
+  );
+
+  const loadShot = useCallback(
+    (id: string) => {
+      const shot = shots.find((s) => s.id === id);
+      if (!shot) return;
+      setDirection(shot.direction);
+      setLightingSetup(shot.lighting);
+    },
+    [shots],
+  );
+
+  const createCampaign = useCallback(
+    (recipeId: string): string | null => {
+      const planId = uid("camp");
+      try {
+        const plan = buildCampaignPlan({
+          planId,
+          recipeId,
+          baseDirection: direction,
+          baseLighting: lightingSetup,
+          brief,
+          makeShotId: (type, i) => `${planId}-${type}-${i}`,
+        });
+        setShots((prev) => [...plan.shots, ...prev]);
+        setCampaigns((prev) => [plan, ...prev]);
+        return planId;
+      } catch {
+        return null;
+      }
+    },
+    [direction, lightingSetup, brief],
+  );
+
+  const removeCampaign = useCallback((id: string) => {
+    setCampaigns((prev) => prev.filter((p) => p.id !== id));
+    setShots((prev) => prev.filter((s) => s.campaignId !== id));
+  }, []);
+
+  const updateBatchConfig = useCallback((patch: Partial<BatchConfig>) => {
+    setBatchConfig((c) => ({ ...c, ...patch }));
+  }, []);
+
+  const runBatch = useCallback(() => {
+    setBatchVariants(generateBatch(direction, batchConfig));
+  }, [direction, batchConfig]);
+
+  const clearBatch = useCallback(() => setBatchVariants([]), []);
 
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
@@ -778,6 +1050,29 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       updateLightConfig,
       applyLightingPreset,
       resetLighting,
+      // Pass B.3
+      shots,
+      createShot,
+      updateShot,
+      removeShot,
+      renameShot,
+      patchShotDirection,
+      snapshotShotVersion,
+      restoreShotVersionById,
+      setShotStatus,
+      setShotApproval,
+      addReferenceToShot,
+      removeReferenceFromShot,
+      saveCurrentAsShot,
+      loadShot,
+      campaigns,
+      createCampaign,
+      removeCampaign,
+      batchConfig,
+      updateBatchConfig,
+      batchVariants,
+      runBatch,
+      clearBatch,
     }),
     [
       direction,
@@ -835,6 +1130,29 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       updateLightConfig,
       applyLightingPreset,
       resetLighting,
+      // Pass B.3 deps
+      shots,
+      createShot,
+      updateShot,
+      removeShot,
+      renameShot,
+      patchShotDirection,
+      snapshotShotVersion,
+      restoreShotVersionById,
+      setShotStatus,
+      setShotApproval,
+      addReferenceToShot,
+      removeReferenceFromShot,
+      saveCurrentAsShot,
+      loadShot,
+      campaigns,
+      createCampaign,
+      removeCampaign,
+      batchConfig,
+      updateBatchConfig,
+      batchVariants,
+      runBatch,
+      clearBatch,
     ],
   );
 

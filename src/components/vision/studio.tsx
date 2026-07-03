@@ -10,6 +10,9 @@ import {
   Palette,
   Camera as CameraIcon,
   Lightbulb,
+  FilmSlate,
+  Sparkle,
+  GridFour,
 } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
@@ -23,6 +26,9 @@ import { BriefPanel } from "./brief-panel";
 import { StyleLibraryPanel } from "./style-library-panel";
 import { CameraPlannerPanel } from "./camera-planner-panel";
 import { LightingDesignerPanel } from "./lighting-designer-panel";
+import { ShotListPanel } from "./shot-list-panel";
+import { CampaignBuilderPanel } from "./campaign-builder-panel";
+import { BatchPanel } from "./batch-panel";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
@@ -33,6 +39,9 @@ export function VisionStudio() {
   const [stylesOpen, setStylesOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [lightingOpen, setLightingOpen] = useState(false);
+  const [shotsOpen, setShotsOpen] = useState(false);
+  const [campaignBuilderOpen, setCampaignBuilderOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
 
   useEffect(() => {
     // Command palette handoff: ?moodboard=1 opens the moodboard panel.
@@ -121,6 +130,33 @@ export function VisionStudio() {
               </button>
               <button
                 type="button"
+                onClick={() => setShotsOpen(true)}
+                aria-label="Open Shot List"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <FilmSlate className="size-4 text-accent-fg" weight="fill" />
+                Shots
+              </button>
+              <button
+                type="button"
+                onClick={() => setCampaignBuilderOpen(true)}
+                aria-label="Open Campaign Builder"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <Sparkle className="size-4 text-accent-fg" weight="fill" />
+                Campaign
+              </button>
+              <button
+                type="button"
+                onClick={() => setBatchOpen(true)}
+                aria-label="Open Batch Generator"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <GridFour className="size-4 text-accent-fg" weight="fill" />
+                Batch
+              </button>
+              <button
+                type="button"
                 onClick={() => setCampaignOpen(true)}
                 aria-label="Plan a 6-shot campaign"
                 className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -172,6 +208,12 @@ export function VisionStudio() {
       <StyleLibraryPanel open={stylesOpen} onClose={() => setStylesOpen(false)} />
       <CameraPlannerPanel open={cameraOpen} onClose={() => setCameraOpen(false)} />
       <LightingDesignerPanel open={lightingOpen} onClose={() => setLightingOpen(false)} />
+      <ShotListPanel open={shotsOpen} onClose={() => setShotsOpen(false)} />
+      <CampaignBuilderPanel
+        open={campaignBuilderOpen}
+        onClose={() => setCampaignBuilderOpen(false)}
+      />
+      <BatchPanel open={batchOpen} onClose={() => setBatchOpen(false)} />
     </VisionProvider>
   );
 }
