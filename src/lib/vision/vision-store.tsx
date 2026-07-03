@@ -67,6 +67,28 @@ import {
   type BatchConfig,
   type BatchVariant,
 } from "./batch";
+import {
+  commentOnSnapshot,
+  commitSnapshot,
+  branchFrom,
+  duplicateSnapshot,
+  emptyTree,
+  labelSnapshot,
+  mergeSnapshots,
+  removeComment,
+  restore as restoreVersion,
+  type PromptComment,
+  type PromptTree,
+  type PromptSnapshotId,
+} from "./prompt-versions";
+import {
+  inspectPrompt,
+  type InspectionReport,
+} from "./prompt-inspector";
+import {
+  scorePrompt,
+  type DirectorScorecard,
+} from "./director-scores";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -248,6 +270,23 @@ type VisionState = {
   batchVariants: BatchVariant[];
   runBatch: () => void;
   clearBatch: () => void;
+
+  // ── Pass B.4 additions ──
+  /** Prompt version tree for the active project. */
+  promptTree: PromptTree;
+  commitPromptSnapshot: (label?: string, message?: string) => string;
+  branchPromptFromHead: (branchId: string) => string | null;
+  restorePromptSnapshot: (id: PromptSnapshotId) => void;
+  duplicatePromptSnapshot: (id: PromptSnapshotId) => string;
+  mergePromptSnapshots: (intoId: PromptSnapshotId, takeId: PromptSnapshotId) => string;
+  labelPromptSnapshot: (id: PromptSnapshotId, label: string) => void;
+  addPromptComment: (id: PromptSnapshotId, body: string) => void;
+  removePromptComment: (id: PromptSnapshotId, commentId: string) => void;
+
+  /** Deterministic inspection of the current prompt */
+  inspection: InspectionReport;
+  /** Deterministic scorecard of the current prompt */
+  scorecard: DirectorScorecard;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -274,6 +313,9 @@ const KEY = {
   campaignsProject: (id: string) => `vv-vision-campaigns-${id}`,
   batchConfigDefault: "vv-vision-batch-default",
   batchConfigProject: (id: string) => `vv-vision-batch-${id}`,
+  // Pass B.4 — prompt version tree.
+  promptTreeDefault: "vv-vision-prompt-tree-default",
+  promptTreeProject: (id: string) => `vv-vision-prompt-tree-${id}`,
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -316,6 +358,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     defaultBatchConfig(),
   );
   const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
+  const [promptTree, setPromptTree] = useState<PromptTree>(emptyTree());
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -492,6 +535,27 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       // storage unavailable
     }
   }, [batchConfig, activeProjectId, hydrated]);
+
+  // Prompt version tree — per project.
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.promptTreeProject(activeProjectId)
+      : KEY.promptTreeDefault;
+    setPromptTree(load<PromptTree>(key, emptyTree()));
+  }, [activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.promptTreeProject(activeProjectId)
+      : KEY.promptTreeDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(promptTree));
+    } catch {
+      // storage unavailable
+    }
+  }, [promptTree, activeProjectId, hydrated]);
 
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
@@ -823,6 +887,111 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
 
   const clearBatch = useCallback(() => setBatchVariants([]), []);
 
+  // ── Pass B.4 actions ──
+  const commitPromptSnapshot = useCallback(
+    (label?: string, message?: string): string => {
+      const id = uid("snap");
+      setPromptTree((tree) =>
+        commitSnapshot(tree, {
+          id,
+          prompt,
+          direction,
+          label,
+          message,
+        }),
+      );
+      return id;
+    },
+    [prompt, direction],
+  );
+
+  const branchPromptFromHead = useCallback(
+    (branchId: string): string | null => {
+      if (!promptTree.headId) return null;
+      const id = uid("branch");
+      setPromptTree((tree) =>
+        tree.headId
+          ? branchFrom(tree, tree.headId, {
+              id,
+              branchId,
+              prompt,
+              direction,
+            })
+          : tree,
+      );
+      return id;
+    },
+    [promptTree.headId, prompt, direction],
+  );
+
+  const restorePromptSnapshot = useCallback(
+    (id: PromptSnapshotId) => {
+      setPromptTree((tree) => {
+        const next = restoreVersion(tree, id);
+        const snap = next.snapshots.find((s) => s.id === id);
+        if (snap) setDirection(snap.direction);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const duplicatePromptSnapshot = useCallback(
+    (sourceId: PromptSnapshotId): string => {
+      const id = uid("snap");
+      setPromptTree((tree) => duplicateSnapshot(tree, sourceId, id));
+      return id;
+    },
+    [],
+  );
+
+  const mergePromptSnapshots = useCallback(
+    (intoId: PromptSnapshotId, takeId: PromptSnapshotId): string => {
+      const id = uid("merge");
+      setPromptTree((tree) => mergeSnapshots(tree, intoId, takeId, id));
+      return id;
+    },
+    [],
+  );
+
+  const labelPromptSnapshot = useCallback(
+    (id: PromptSnapshotId, label: string) => {
+      setPromptTree((tree) => labelSnapshot(tree, id, label));
+    },
+    [],
+  );
+
+  const addPromptComment = useCallback(
+    (id: PromptSnapshotId, body: string) => {
+      const trimmed = body.trim();
+      if (!trimmed) return;
+      const comment: PromptComment = {
+        id: uid("cm"),
+        body: trimmed,
+        createdAt: Date.now(),
+      };
+      setPromptTree((tree) => commentOnSnapshot(tree, id, comment));
+    },
+    [],
+  );
+
+  const removePromptComment = useCallback(
+    (id: PromptSnapshotId, commentId: string) => {
+      setPromptTree((tree) => removeComment(tree, id, commentId));
+    },
+    [],
+  );
+
+  // Memoised inspection + scorecard on the current prompt.
+  const inspection = useMemo(
+    () => inspectPrompt(direction, prompt, { targetModel }),
+    [direction, prompt, targetModel],
+  );
+  const scorecard = useMemo(
+    () => scorePrompt(direction, prompt),
+    [direction, prompt],
+  );
+
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
     runGenerate({
@@ -1073,6 +1242,18 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       batchVariants,
       runBatch,
       clearBatch,
+      // Pass B.4
+      promptTree,
+      commitPromptSnapshot,
+      branchPromptFromHead,
+      restorePromptSnapshot,
+      duplicatePromptSnapshot,
+      mergePromptSnapshots,
+      labelPromptSnapshot,
+      addPromptComment,
+      removePromptComment,
+      inspection,
+      scorecard,
     }),
     [
       direction,
@@ -1153,6 +1334,18 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       batchVariants,
       runBatch,
       clearBatch,
+      // Pass B.4 deps
+      promptTree,
+      commitPromptSnapshot,
+      branchPromptFromHead,
+      restorePromptSnapshot,
+      duplicatePromptSnapshot,
+      mergePromptSnapshots,
+      labelPromptSnapshot,
+      addPromptComment,
+      removePromptComment,
+      inspection,
+      scorecard,
     ],
   );
 
