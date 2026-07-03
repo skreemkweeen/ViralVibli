@@ -180,6 +180,80 @@ export const frameworks: Framework[] = [
     promptHint:
       "The best Day in the Life content reveals personality through small, specific, unexpected details — not the highlights.",
   },
+  {
+    id: "storybrand",
+    name: "StoryBrand",
+    tagline: "Character → Problem → Guide → Plan → CTA → Success / Failure",
+    description: "Donald Miller's 7-part framework. The audience is the hero; you are the guide.",
+    beats: [
+      "Slide 1: The hero (the audience) and what they want",
+      "Slide 2: The problem — external, internal, and philosophical",
+      "Slide 3: You as the guide — empathy + authority in one line",
+      "Slides 4–5: The plan — 3 clear steps",
+      "Slide 6: The call to action — direct + transitional CTAs",
+      "Final slide: The stakes — success if they act, failure if they don't",
+    ],
+    promptHint:
+      "Never make yourself the hero. The audience is the hero; you are Yoda. Show empathy first, authority second.",
+  },
+  {
+    id: "emotional-arc",
+    name: "Emotional Arc",
+    tagline: "Take them on a feeling journey",
+    description: "Structured emotional beats: setup → tension → catharsis.",
+    beats: [
+      "Slide 1: Emotional grounding — establish the feeling",
+      "Slides 2–3: Rising tension — introduce conflict or vulnerability",
+      "Slide 4: The turning point — pivot or realisation",
+      "Slides 5+: Catharsis — release, insight, or triumph",
+      "Final slide: The takeaway feeling — what they carry with them",
+    ],
+    promptHint:
+      "Name the feeling explicitly at least once. Emotional arcs die when they stay abstract.",
+  },
+  {
+    id: "educational-ladder",
+    name: "Educational Ladder",
+    tagline: "Beginner → Intermediate → Advanced",
+    description: "Ladder up complexity so beginners and experts both learn something.",
+    beats: [
+      "Slide 1: The rung 1 promise — 'here's what most people know'",
+      "Slides 2–3: Rung 2 — 'here's what smart people know'",
+      "Slides 4–5: Rung 3 — 'here's what pros know'",
+      "Final slide: The bridge — apply the highest rung to their situation",
+    ],
+    promptHint:
+      "Every rung must feel like earned insight — not just a longer word for the same idea.",
+  },
+  {
+    id: "documentary",
+    name: "Documentary",
+    tagline: "Real footage, real feelings, real conclusion",
+    description: "Long-form storytelling that reads as journalism.",
+    beats: [
+      "Slide 1: The subject — introduce a specific person, place, or moment",
+      "Slides 2–3: The context — the wider world around the subject",
+      "Slides 4–5: The conflict or question the piece is investigating",
+      "Slides 6+: Revelation — what the reporting uncovered",
+      "Final slide: The reflection — what it means for the viewer",
+    ],
+    promptHint:
+      "Documentaries earn attention with specificity — a name, a place, a date. Never speak in generalities.",
+  },
+  {
+    id: "mini-vlog",
+    name: "Mini Vlog",
+    tagline: "Casual, kinetic, first-person",
+    description: "A short, energetic personal story with three beats.",
+    beats: [
+      "Slide 1: The setup — 'okay so today I…'",
+      "Slides 2–3: The moment — what happened, told with texture",
+      "Slide 4: The twist or takeaway",
+      "Final slide: The invite — 'let me know if you want part 2'",
+    ],
+    promptHint:
+      "Mini vlogs feel real when they include the mundane friction — not just the highlights.",
+  },
 ];
 
 export function getFramework(id: string): Framework | undefined {
