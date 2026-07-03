@@ -32,6 +32,15 @@ import {
   withPresets,
   type SavedStyle,
 } from "./style-library";
+import {
+  emptyLightingSetup,
+  findPreset as findLightingPreset,
+  updateLight,
+  type Light,
+  type LightRole,
+  type LightingPresetId,
+  type LightingSetup,
+} from "./lighting";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -175,6 +184,13 @@ type VisionState = {
   /** Descriptors added by the most recent director move — the UI shows a diff. */
   lastDirectorResult: DirectorResult | null;
   clearDirectorResult: () => void;
+
+  // ── Pass B.2 additions ──
+  /** Studio lighting rig — 6 lights + optional preset badge. */
+  lightingSetup: LightingSetup;
+  updateLightConfig: (role: LightRole, patch: Partial<Light>) => void;
+  applyLightingPreset: (id: LightingPresetId) => void;
+  resetLighting: () => void;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -191,6 +207,9 @@ const KEY = {
   briefProject: (id: string) => `vv-vision-brief-${id}`,
   styles: "vv-vision-styles",
   targetModel: "vv-vision-target-model",
+  // Pass B.2 — lighting rig is per project.
+  lightingDefault: "vv-vision-lighting-default",
+  lightingProject: (id: string) => `vv-vision-lighting-${id}`,
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -224,6 +243,9 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   );
   const [lastDirectorResult, setLastDirectorResult] =
     useState<DirectorResult | null>(null);
+  const [lightingSetup, setLightingSetup] = useState<LightingSetup>(
+    emptyLightingSetup(),
+  );
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -325,6 +347,27 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       // storage unavailable
     }
   }, [brief, activeProjectId, hydrated]);
+
+  // Lighting rig follows the same per-project pattern as the brief.
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.lightingProject(activeProjectId)
+      : KEY.lightingDefault;
+    setLightingSetup(load<LightingSetup>(key, emptyLightingSetup()));
+  }, [activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.lightingProject(activeProjectId)
+      : KEY.lightingDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(lightingSetup));
+    } catch {
+      // storage unavailable
+    }
+  }, [lightingSetup, activeProjectId, hydrated]);
 
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
@@ -487,6 +530,24 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
 
   const clearDirectorResult = useCallback(
     () => setLastDirectorResult(null),
+    [],
+  );
+
+  const updateLightConfig = useCallback(
+    (role: LightRole, patch: Partial<Light>) => {
+      setLightingSetup((s) => updateLight(s, role, patch));
+    },
+    [],
+  );
+
+  const applyLightingPreset = useCallback((id: LightingPresetId) => {
+    const preset = findLightingPreset(id);
+    if (!preset) return;
+    setLightingSetup((s) => preset.apply(s));
+  }, []);
+
+  const resetLighting = useCallback(
+    () => setLightingSetup(emptyLightingSetup()),
     [],
   );
 
@@ -712,6 +773,11 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       applyDirectorMove,
       lastDirectorResult,
       clearDirectorResult,
+      // Pass B.2
+      lightingSetup,
+      updateLightConfig,
+      applyLightingPreset,
+      resetLighting,
     }),
     [
       direction,
@@ -764,6 +830,11 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       applyDirectorMove,
       lastDirectorResult,
       clearDirectorResult,
+      // Pass B.2 deps
+      lightingSetup,
+      updateLightConfig,
+      applyLightingPreset,
+      resetLighting,
     ],
   );
 

@@ -8,6 +8,8 @@ import {
   PushPin,
   Notebook,
   Palette,
+  Camera as CameraIcon,
+  Lightbulb,
 } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
@@ -19,6 +21,8 @@ import { CampaignPlanner } from "./campaign-planner";
 import { MoodboardPanel } from "./moodboard-panel";
 import { BriefPanel } from "./brief-panel";
 import { StyleLibraryPanel } from "./style-library-panel";
+import { CameraPlannerPanel } from "./camera-planner-panel";
+import { LightingDesignerPanel } from "./lighting-designer-panel";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
@@ -27,6 +31,8 @@ export function VisionStudio() {
   const [moodboardOpen, setMoodboardOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
   const [stylesOpen, setStylesOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [lightingOpen, setLightingOpen] = useState(false);
 
   useEffect(() => {
     // Command palette handoff: ?moodboard=1 opens the moodboard panel.
@@ -88,6 +94,24 @@ export function VisionStudio() {
               </button>
               <button
                 type="button"
+                onClick={() => setCameraOpen(true)}
+                aria-label="Open Camera Planner"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <CameraIcon className="size-4 text-accent-fg" weight="fill" />
+                Camera
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightingOpen(true)}
+                aria-label="Open Lighting Designer"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <Lightbulb className="size-4 text-accent-fg" weight="fill" />
+                Lighting
+              </button>
+              <button
+                type="button"
                 onClick={() => setMoodboardOpen(true)}
                 aria-label="Open moodboard"
                 className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -146,6 +170,8 @@ export function VisionStudio() {
       <MoodboardPanel open={moodboardOpen} onClose={() => setMoodboardOpen(false)} />
       <BriefPanel open={briefOpen} onClose={() => setBriefOpen(false)} />
       <StyleLibraryPanel open={stylesOpen} onClose={() => setStylesOpen(false)} />
+      <CameraPlannerPanel open={cameraOpen} onClose={() => setCameraOpen(false)} />
+      <LightingDesignerPanel open={lightingOpen} onClose={() => setLightingOpen(false)} />
     </VisionProvider>
   );
 }
