@@ -89,6 +89,13 @@ import {
   scorePrompt,
   type DirectorScorecard,
 } from "./director-scores";
+import {
+  analyzeWall,
+  proposeFromWall,
+  type ReferenceItem,
+  type ReferenceAnalysis,
+  type DirectionProposal,
+} from "./reference-wall";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -287,6 +294,18 @@ type VisionState = {
   inspection: InspectionReport;
   /** Deterministic scorecard of the current prompt */
   scorecard: DirectorScorecard;
+
+  // ── Pass B.5 additions ──
+  referenceWall: ReferenceItem[];
+  addReference: (ref: Omit<ReferenceItem, "id" | "createdAt">) => string;
+  removeReferenceItem: (id: string) => void;
+  updateReferenceItem: (id: string, patch: Partial<ReferenceItem>) => void;
+  /** Aggregate analysis of the entire wall — recomputed automatically */
+  referenceAnalyses: ReferenceAnalysis[];
+  /** Direction proposal derived from the wall */
+  referenceProposal: DirectionProposal;
+  /** Apply the current proposal to the builder direction */
+  applyReferenceProposal: () => void;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -316,6 +335,9 @@ const KEY = {
   // Pass B.4 — prompt version tree.
   promptTreeDefault: "vv-vision-prompt-tree-default",
   promptTreeProject: (id: string) => `vv-vision-prompt-tree-${id}`,
+  // Pass B.5 — reference wall (typed references) per project.
+  refWallDefault: "vv-vision-refwall-default",
+  refWallProject: (id: string) => `vv-vision-refwall-${id}`,
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -359,6 +381,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   );
   const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
   const [promptTree, setPromptTree] = useState<PromptTree>(emptyTree());
+  const [referenceWall, setReferenceWall] = useState<ReferenceItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -556,6 +579,27 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       // storage unavailable
     }
   }, [promptTree, activeProjectId, hydrated]);
+
+  // Reference wall — per project.
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.refWallProject(activeProjectId)
+      : KEY.refWallDefault;
+    setReferenceWall(load<ReferenceItem[]>(key, []));
+  }, [activeProjectId, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.refWallProject(activeProjectId)
+      : KEY.refWallDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(referenceWall));
+    } catch {
+      // storage unavailable
+    }
+  }, [referenceWall, activeProjectId, hydrated]);
 
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
@@ -992,6 +1036,58 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     [direction, prompt],
   );
 
+  // ── Pass B.5 actions ──
+  const addReference = useCallback(
+    (ref: Omit<ReferenceItem, "id" | "createdAt">): string => {
+      const id = uid("refw");
+      setReferenceWall((prev) => [
+        { ...ref, id, createdAt: Date.now() },
+        ...prev,
+      ]);
+      return id;
+    },
+    [],
+  );
+
+  const removeReferenceItem = useCallback((id: string) => {
+    setReferenceWall((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  const updateReferenceItem = useCallback(
+    (id: string, patch: Partial<ReferenceItem>) => {
+      setReferenceWall((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+      );
+    },
+    [],
+  );
+
+  const brandVocabulary = useMemo(
+    () =>
+      [brief.brandPersonality, brief.visualKeywords, brief.artDirectionNotes]
+        .filter((s): s is string => !!s && s.trim().length > 0)
+        .join(", ")
+        .split(/[,\s]+/)
+        .filter((w) => w.length > 3)
+        .map((w) => w.toLowerCase()),
+    [brief],
+  );
+
+  const referenceAnalyses = useMemo(
+    () => analyzeWall(referenceWall, { brandVocabulary }),
+    [referenceWall, brandVocabulary],
+  );
+
+  const referenceProposal = useMemo(
+    () => proposeFromWall(referenceAnalyses),
+    [referenceAnalyses],
+  );
+
+  const applyReferenceProposal = useCallback(() => {
+    if (Object.keys(referenceProposal.patch).length === 0) return;
+    setDirection((d) => ({ ...d, ...referenceProposal.patch }));
+  }, [referenceProposal]);
+
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
     runGenerate({
@@ -1254,6 +1350,14 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       removePromptComment,
       inspection,
       scorecard,
+      // Pass B.5
+      referenceWall,
+      addReference,
+      removeReferenceItem,
+      updateReferenceItem,
+      referenceAnalyses,
+      referenceProposal,
+      applyReferenceProposal,
     }),
     [
       direction,
@@ -1346,6 +1450,14 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       removePromptComment,
       inspection,
       scorecard,
+      // Pass B.5 deps
+      referenceWall,
+      addReference,
+      removeReferenceItem,
+      updateReferenceItem,
+      referenceAnalyses,
+      referenceProposal,
+      applyReferenceProposal,
     ],
   );
 

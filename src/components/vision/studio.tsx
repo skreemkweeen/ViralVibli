@@ -14,6 +14,7 @@ import {
   Sparkle,
   GridFour,
   Brain,
+  Books,
 } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
@@ -31,6 +32,7 @@ import { ShotListPanel } from "./shot-list-panel";
 import { CampaignBuilderPanel } from "./campaign-builder-panel";
 import { BatchPanel } from "./batch-panel";
 import { PromptIntelligencePanel } from "./prompt-intelligence-panel";
+import { ReferenceWallPanel } from "./reference-wall-panel";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
@@ -45,6 +47,7 @@ export function VisionStudio() {
   const [campaignBuilderOpen, setCampaignBuilderOpen] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
+  const [refWallOpen, setRefWallOpen] = useState(false);
 
   useEffect(() => {
     // Command palette handoff: ?moodboard=1 opens the moodboard panel.
@@ -169,6 +172,15 @@ export function VisionStudio() {
               </button>
               <button
                 type="button"
+                onClick={() => setRefWallOpen(true)}
+                aria-label="Open Reference Wall"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <Books className="size-4 text-accent-fg" weight="fill" />
+                Refs
+              </button>
+              <button
+                type="button"
                 onClick={() => setCampaignOpen(true)}
                 aria-label="Plan a 6-shot campaign"
                 className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -229,6 +241,10 @@ export function VisionStudio() {
       <PromptIntelligencePanel
         open={intelligenceOpen}
         onClose={() => setIntelligenceOpen(false)}
+      />
+      <ReferenceWallPanel
+        open={refWallOpen}
+        onClose={() => setRefWallOpen(false)}
       />
     </VisionProvider>
   );
