@@ -15,6 +15,7 @@ import {
   GridFour,
   Brain,
   Books,
+  Export as ExportIcon,
 } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
@@ -33,6 +34,7 @@ import { CampaignBuilderPanel } from "./campaign-builder-panel";
 import { BatchPanel } from "./batch-panel";
 import { PromptIntelligencePanel } from "./prompt-intelligence-panel";
 import { ReferenceWallPanel } from "./reference-wall-panel";
+import { ExportMemoryPanel } from "./export-memory-panel";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
@@ -48,6 +50,7 @@ export function VisionStudio() {
   const [batchOpen, setBatchOpen] = useState(false);
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
   const [refWallOpen, setRefWallOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     // Command palette handoff: ?moodboard=1 opens the moodboard panel.
@@ -181,6 +184,15 @@ export function VisionStudio() {
               </button>
               <button
                 type="button"
+                onClick={() => setExportOpen(true)}
+                aria-label="Open Export and Memory"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                <ExportIcon className="size-4 text-accent-fg" weight="fill" />
+                Export
+              </button>
+              <button
+                type="button"
                 onClick={() => setCampaignOpen(true)}
                 aria-label="Plan a 6-shot campaign"
                 className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -245,6 +257,10 @@ export function VisionStudio() {
       <ReferenceWallPanel
         open={refWallOpen}
         onClose={() => setRefWallOpen(false)}
+      />
+      <ExportMemoryPanel
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
       />
     </VisionProvider>
   );

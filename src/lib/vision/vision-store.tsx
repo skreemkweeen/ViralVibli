@@ -96,6 +96,24 @@ import {
   type ReferenceAnalysis,
   type DirectionProposal,
 } from "./reference-wall";
+import {
+  exportCampaign,
+  promptBundle,
+  type CampaignPackageInput,
+  type ExportedArtifact,
+  type ExportFormat,
+  type PromptBundleEntry,
+} from "./export-center";
+import {
+  addPreference as addPref,
+  bumpPreference as bumpPref,
+  emptyMemory,
+  removePreference as removePref,
+  updatePreference as updatePref,
+  type CreativeMemory,
+  type PreferenceCategory,
+  type PreferenceEntry,
+} from "./creative-memory";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -306,6 +324,26 @@ type VisionState = {
   referenceProposal: DirectionProposal;
   /** Apply the current proposal to the builder direction */
   applyReferenceProposal: () => void;
+
+  // ── Pass B.7 additions ──
+  /** Per-model reformats of the current prompt */
+  promptBundle: PromptBundleEntry[];
+  /** Render the current project state as an export artifact */
+  exportProject: (format: ExportFormat) => ExportedArtifact;
+
+  // ── Pass B.8 additions ──
+  memory: CreativeMemory;
+  addMemory: (
+    category: PreferenceCategory,
+    entry: { id?: string; label: string; weight?: number; note?: string },
+  ) => string;
+  bumpMemory: (category: PreferenceCategory, id: string, delta?: number) => void;
+  updateMemory: (
+    category: PreferenceCategory,
+    id: string,
+    patch: Partial<PreferenceEntry>,
+  ) => void;
+  removeMemory: (category: PreferenceCategory, id: string) => void;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -338,6 +376,8 @@ const KEY = {
   // Pass B.5 — reference wall (typed references) per project.
   refWallDefault: "vv-vision-refwall-default",
   refWallProject: (id: string) => `vv-vision-refwall-${id}`,
+  // Pass B.8 — creative memory is workspace-wide.
+  memory: "vv-vision-creative-memory",
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -382,6 +422,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
   const [promptTree, setPromptTree] = useState<PromptTree>(emptyTree());
   const [referenceWall, setReferenceWall] = useState<ReferenceItem[]>([]);
+  const [memory, setMemory] = useState<CreativeMemory>(emptyMemory());
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -403,6 +444,7 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     setTargetModelState(
       load<TargetModelId>(KEY.targetModel, DEFAULT_TARGET_MODEL),
     );
+    setMemory(load<CreativeMemory>(KEY.memory, emptyMemory()));
     // Command-palette handoff: if the palette routed here with a subject,
     // apply it once and clear the key so subsequent visits stay pristine.
     try {
@@ -441,6 +483,9 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hydrated) localStorage.setItem(KEY.targetModel, JSON.stringify(targetModel));
   }, [targetModel, hydrated]);
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(KEY.memory, JSON.stringify(memory));
+  }, [memory, hydrated]);
 
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
   const targetPrompt = useMemo(
@@ -1088,6 +1133,81 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     setDirection((d) => ({ ...d, ...referenceProposal.patch }));
   }, [referenceProposal]);
 
+  // ── Pass B.7 ──
+  const promptBundleFor = useMemo(
+    () => promptBundle(prompt, direction),
+    [prompt, direction],
+  );
+
+  const exportProject = useCallback(
+    (format: ExportFormat): ExportedArtifact => {
+      const input: CampaignPackageInput = {
+        brief,
+        shots,
+        campaigns,
+        lighting: lightingSetup,
+        references: referenceWall,
+        direction,
+        prompt,
+      };
+      return exportCampaign(input, format);
+    },
+    [
+      brief,
+      shots,
+      campaigns,
+      lightingSetup,
+      referenceWall,
+      direction,
+      prompt,
+    ],
+  );
+
+  // ── Pass B.8 ──
+  const addMemory = useCallback(
+    (
+      category: PreferenceCategory,
+      entry: { id?: string; label: string; weight?: number; note?: string },
+    ): string => {
+      const id = entry.id ?? uid("mem");
+      setMemory((m) =>
+        addPref(m, category, {
+          id,
+          label: entry.label,
+          weight: entry.weight ?? 60,
+          note: entry.note,
+        }),
+      );
+      return id;
+    },
+    [],
+  );
+
+  const bumpMemory = useCallback(
+    (category: PreferenceCategory, id: string, delta: number = 5) => {
+      setMemory((m) => bumpPref(m, category, id, delta));
+    },
+    [],
+  );
+
+  const updateMemory = useCallback(
+    (
+      category: PreferenceCategory,
+      id: string,
+      patch: Partial<PreferenceEntry>,
+    ) => {
+      setMemory((m) => updatePref(m, category, id, patch));
+    },
+    [],
+  );
+
+  const removeMemory = useCallback(
+    (category: PreferenceCategory, id: string) => {
+      setMemory((m) => removePref(m, category, id));
+    },
+    [],
+  );
+
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
     runGenerate({
@@ -1358,6 +1478,15 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       referenceAnalyses,
       referenceProposal,
       applyReferenceProposal,
+      // Pass B.7
+      promptBundle: promptBundleFor,
+      exportProject,
+      // Pass B.8
+      memory,
+      addMemory,
+      bumpMemory,
+      updateMemory,
+      removeMemory,
     }),
     [
       direction,
@@ -1458,6 +1587,15 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       referenceAnalyses,
       referenceProposal,
       applyReferenceProposal,
+      // Pass B.7 deps
+      promptBundleFor,
+      exportProject,
+      // Pass B.8 deps
+      memory,
+      addMemory,
+      bumpMemory,
+      updateMemory,
+      removeMemory,
     ],
   );
 
