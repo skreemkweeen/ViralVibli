@@ -1,22 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  SquaresFour,
-  Sidebar as SidebarIcon,
-  Rows,
-  PushPin,
-  Notebook,
-  Palette,
-  Camera as CameraIcon,
-  Lightbulb,
-  FilmSlate,
-  Sparkle,
-  GridFour,
-  Brain,
-  Books,
-  Export as ExportIcon,
-} from "@phosphor-icons/react";
+import { Sidebar as SidebarIcon } from "@phosphor-icons/react";
 import { VisionProvider } from "@/lib/vision/vision-store";
 import { CategoryBar } from "./category-bar";
 import { ControlPanel } from "./control-panel";
@@ -35,10 +20,13 @@ import { BatchPanel } from "./batch-panel";
 import { PromptIntelligencePanel } from "./prompt-intelligence-panel";
 import { ReferenceWallPanel } from "./reference-wall-panel";
 import { ExportMemoryPanel } from "./export-memory-panel";
+import { ToolRail, type ToolId } from "./tool-rail";
+import { InspectorRail } from "./inspector-rail";
 
 export function VisionStudio() {
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -53,9 +41,6 @@ export function VisionStudio() {
   const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
-    // Command palette handoff: ?moodboard=1 opens the moodboard panel.
-    // Read from window.location directly to avoid a Suspense boundary in a
-    // client-only leaf.
     try {
       const q = new URLSearchParams(window.location.search);
       if (q.get("moodboard") === "1") setMoodboardOpen(true);
@@ -64,11 +49,40 @@ export function VisionStudio() {
     }
   }, []);
 
+  const openTool = (id: ToolId) => {
+    switch (id) {
+      case "brief":
+        return setBriefOpen(true);
+      case "styles":
+        return setStylesOpen(true);
+      case "refs":
+        return setRefWallOpen(true);
+      case "moodboard":
+        return setMoodboardOpen(true);
+      case "camera":
+        return setCameraOpen(true);
+      case "lighting":
+        return setLightingOpen(true);
+      case "shots":
+        return setShotsOpen(true);
+      case "campaign":
+        return setCampaignBuilderOpen(true);
+      case "batch":
+        return setBatchOpen(true);
+      case "intelligence":
+        return setIntelligenceOpen(true);
+      case "export":
+        return setExportOpen(true);
+      case "presets":
+        return setPresetsOpen(true);
+    }
+  };
+
   return (
     <VisionProvider>
       <div className="flex flex-col lg:h-[calc(100dvh-8rem)]">
-        {/* header */}
-        <header className="mb-5">
+        {/* Compact header */}
+        <header className="mb-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h1 className="text-[clamp(1.6rem,4vw,2.2rem)] font-semibold tracking-[-0.03em]">
@@ -79,7 +93,7 @@ export function VisionStudio() {
                 concepts.
               </p>
             </div>
-            <div className="hidden shrink-0 gap-2 sm:flex">
+            <div className="hidden shrink-0 items-center gap-2 sm:flex">
               <button
                 type="button"
                 onClick={() => setComposerOpen((v) => !v)}
@@ -87,163 +101,104 @@ export function VisionStudio() {
                 aria-label={
                   composerOpen ? "Hide prompt composer" : "Show prompt composer"
                 }
-                className="hidden cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 xl:inline-flex"
+                className="hidden cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 xl:inline-flex"
               >
-                <SidebarIcon className="size-4 text-accent-fg" weight={composerOpen ? "fill" : "regular"} />
+                <SidebarIcon
+                  className="size-4 text-accent-fg"
+                  weight={composerOpen ? "fill" : "regular"}
+                />
                 Composer
               </button>
               <button
                 type="button"
-                onClick={() => setBriefOpen(true)}
-                aria-label="Open Creative Brief"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                onClick={() => setInspectorOpen((v) => !v)}
+                aria-pressed={inspectorOpen}
+                aria-label={
+                  inspectorOpen
+                    ? "Hide inspector rail"
+                    : "Show inspector rail"
+                }
+                className="hidden cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:border-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 xl:inline-flex"
               >
-                <Notebook className="size-4 text-accent-fg" weight="fill" />
-                Brief
-              </button>
-              <button
-                type="button"
-                onClick={() => setStylesOpen(true)}
-                aria-label="Open Style Library"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Palette className="size-4 text-accent-fg" weight="fill" />
-                Styles
-              </button>
-              <button
-                type="button"
-                onClick={() => setCameraOpen(true)}
-                aria-label="Open Camera Planner"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <CameraIcon className="size-4 text-accent-fg" weight="fill" />
-                Camera
-              </button>
-              <button
-                type="button"
-                onClick={() => setLightingOpen(true)}
-                aria-label="Open Lighting Designer"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Lightbulb className="size-4 text-accent-fg" weight="fill" />
-                Lighting
-              </button>
-              <button
-                type="button"
-                onClick={() => setMoodboardOpen(true)}
-                aria-label="Open moodboard"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <PushPin className="size-4 text-accent-fg" weight="fill" />
-                Moodboard
-              </button>
-              <button
-                type="button"
-                onClick={() => setShotsOpen(true)}
-                aria-label="Open Shot List"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <FilmSlate className="size-4 text-accent-fg" weight="fill" />
-                Shots
-              </button>
-              <button
-                type="button"
-                onClick={() => setCampaignBuilderOpen(true)}
-                aria-label="Open Campaign Builder"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Sparkle className="size-4 text-accent-fg" weight="fill" />
-                Campaign
-              </button>
-              <button
-                type="button"
-                onClick={() => setBatchOpen(true)}
-                aria-label="Open Batch Generator"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <GridFour className="size-4 text-accent-fg" weight="fill" />
-                Batch
-              </button>
-              <button
-                type="button"
-                onClick={() => setIntelligenceOpen(true)}
-                aria-label="Open Prompt Intelligence"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Brain className="size-4 text-accent-fg" weight="fill" />
-                Intelligence
-              </button>
-              <button
-                type="button"
-                onClick={() => setRefWallOpen(true)}
-                aria-label="Open Reference Wall"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Books className="size-4 text-accent-fg" weight="fill" />
-                Refs
-              </button>
-              <button
-                type="button"
-                onClick={() => setExportOpen(true)}
-                aria-label="Open Export and Memory"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <ExportIcon className="size-4 text-accent-fg" weight="fill" />
-                Export
-              </button>
-              <button
-                type="button"
-                onClick={() => setCampaignOpen(true)}
-                aria-label="Plan a 6-shot campaign"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <Rows className="size-4 text-accent-fg" />
-                Plan campaign
-              </button>
-              <button
-                type="button"
-                onClick={() => setPresetsOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-faint active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-              >
-                <SquaresFour className="size-4 text-accent-fg" />
-                Browse presets
+                <SidebarIcon
+                  className="size-4 text-accent-fg"
+                  weight={inspectorOpen ? "fill" : "regular"}
+                />
+                Inspector
               </button>
             </div>
           </div>
-          <div className="mt-5">
+          <div className="mt-4">
             <CategoryBar />
           </div>
         </header>
 
-        {/* Three-pane workspace: Controls | Canvas | Composer.
-            Composer collapses to a hidden state below xl; on xl+ it's a
-            360px right inspector. */}
+        {/* Professional 4/5-column workspace:
+              Tool rail | Controls | Canvas | Composer? | Inspector rail?
+            On lg the composer and inspector rails collapse into modals only. */}
         <div
-          className={`grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] ${
-            composerOpen ? "xl:grid-cols-[340px_minmax(0,1fr)_360px]" : "xl:grid-cols-[360px_1fr]"
+          className={`grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[200px_340px_1fr] ${
+            composerOpen && inspectorOpen
+              ? "xl:grid-cols-[200px_320px_minmax(0,1fr)_320px_260px]"
+              : composerOpen
+                ? "xl:grid-cols-[200px_320px_minmax(0,1fr)_340px]"
+                : inspectorOpen
+                  ? "xl:grid-cols-[200px_340px_minmax(0,1fr)_280px]"
+                  : "xl:grid-cols-[200px_340px_1fr]"
           }`}
         >
+          {/* Tool rail — always shown on lg+ */}
+          <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface lg:block lg:h-full">
+            <ToolRail onOpen={openTool} />
+          </div>
+          {/* Controls */}
           <div className="overflow-hidden rounded-2xl border border-line bg-surface lg:h-full">
             <ControlPanel />
           </div>
+          {/* Canvas */}
           <div className="overflow-hidden rounded-2xl border border-line bg-surface lg:h-full">
             <Canvas onBrowsePresets={() => setPresetsOpen(true)} />
           </div>
+          {/* Composer — xl only */}
           {composerOpen && (
             <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface xl:block xl:h-full">
               <PromptComposer />
+            </div>
+          )}
+          {/* Inspector rail — xl only */}
+          {inspectorOpen && (
+            <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface xl:block xl:h-full">
+              <InspectorRail
+                onOpen={(id) => {
+                  if (id === "intelligence") setIntelligenceOpen(true);
+                  else if (id === "shots") setShotsOpen(true);
+                  else if (id === "batch") setBatchOpen(true);
+                }}
+              />
             </div>
           )}
         </div>
       </div>
 
       <PresetGallery open={presetsOpen} onClose={() => setPresetsOpen(false)} />
-      <CampaignPlanner open={campaignOpen} onClose={() => setCampaignOpen(false)} />
-      <MoodboardPanel open={moodboardOpen} onClose={() => setMoodboardOpen(false)} />
+      <CampaignPlanner
+        open={campaignOpen}
+        onClose={() => setCampaignOpen(false)}
+      />
+      <MoodboardPanel
+        open={moodboardOpen}
+        onClose={() => setMoodboardOpen(false)}
+      />
       <BriefPanel open={briefOpen} onClose={() => setBriefOpen(false)} />
       <StyleLibraryPanel open={stylesOpen} onClose={() => setStylesOpen(false)} />
-      <CameraPlannerPanel open={cameraOpen} onClose={() => setCameraOpen(false)} />
-      <LightingDesignerPanel open={lightingOpen} onClose={() => setLightingOpen(false)} />
+      <CameraPlannerPanel
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+      />
+      <LightingDesignerPanel
+        open={lightingOpen}
+        onClose={() => setLightingOpen(false)}
+      />
       <ShotListPanel open={shotsOpen} onClose={() => setShotsOpen(false)} />
       <CampaignBuilderPanel
         open={campaignBuilderOpen}
