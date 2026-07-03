@@ -9,6 +9,7 @@ import {
   ArrowsClockwise,
 } from "@phosphor-icons/react";
 import { useVision } from "@/lib/vision/vision-store";
+import { DirectorStrip } from "./director-strip";
 import {
   styles,
   moods,
@@ -196,6 +197,9 @@ export function PromptComposer({
           </button>
         </div>
       </header>
+
+      {/* Director + Model strip (Phase 12 Pass B.1) */}
+      <DirectorStrip />
 
       {/* Blocks */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">

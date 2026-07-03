@@ -10,6 +10,28 @@ import {
   useState,
 } from "react";
 import { assemblePrompt, emptyDirection, type Direction } from "./prompt";
+import {
+  emptyCreativeBrief,
+  mergeBrief,
+  type CreativeBrief,
+} from "./brief";
+import {
+  DEFAULT_TARGET_MODEL,
+  formatForModel,
+  type TargetModelId,
+} from "./models";
+import {
+  applyDirectorAction,
+  type DirectorAction,
+  type DirectorResult,
+} from "./director";
+import {
+  applyStyleTo,
+  deleteStyle,
+  saveStyle,
+  withPresets,
+  type SavedStyle,
+} from "./style-library";
 import type { ImageResult } from "@/lib/ai/types";
 import { useGeneration } from "@/hooks/studio/use-generation";
 import { allEnhanceGoals } from "@/lib/ai/types";
@@ -133,6 +155,26 @@ type VisionState = {
   updateMoodboardNote: (id: string, note: string) => void;
   reorderMoodboard: (from: number, to: number) => void;
   isConceptOnMoodboard: (conceptId: string) => boolean;
+
+  // ── Pass B.1 additions ──
+  brief: CreativeBrief;
+  updateBrief: (patch: Partial<CreativeBrief>) => void;
+  resetBrief: () => void;
+
+  savedStyles: SavedStyle[];
+  saveCurrentAsStyle: (name: string, opts?: { vibe?: string; suffix?: string; swatch?: string }) => string | null;
+  applyStyle: (id: string) => void;
+  removeStyle: (id: string) => void;
+
+  targetModel: TargetModelId;
+  setTargetModel: (id: TargetModelId) => void;
+  /** The prompt reformatted for the currently selected target model. */
+  targetPrompt: string;
+
+  applyDirectorMove: (action: DirectorAction) => DirectorResult;
+  /** Descriptors added by the most recent director move — the UI shows a diff. */
+  lastDirectorResult: DirectorResult | null;
+  clearDirectorResult: () => void;
 };
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
@@ -143,6 +185,12 @@ const KEY = {
   collections: "vv-vision-collections",
   saved: "vv-vision-saved",
   moodboard: "vv-vision-moodboard",
+  // Pass B.1 keys — brief is per-project (with default), styles + target
+  // model live workspace-wide so a signature carries across projects.
+  briefDefault: "vv-vision-brief-default",
+  briefProject: (id: string) => `vv-vision-brief-${id}`,
+  styles: "vv-vision-styles",
+  targetModel: "vv-vision-target-model",
 };
 
 const VisionContext = createContext<VisionState | null>(null);
@@ -169,6 +217,13 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [saved, setSaved] = useState<SavedPrompt[]>([]);
   const [moodboard, setMoodboard] = useState<MoodboardItem[]>([]);
+  const [brief, setBrief] = useState<CreativeBrief>(emptyCreativeBrief);
+  const [savedStyles, setSavedStyles] = useState<SavedStyle[]>([]);
+  const [targetModel, setTargetModelState] = useState<TargetModelId>(
+    DEFAULT_TARGET_MODEL,
+  );
+  const [lastDirectorResult, setLastDirectorResult] =
+    useState<DirectorResult | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // Captures direction at generate-call time so the async result can read it
@@ -186,6 +241,10 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     );
     setSaved(load<SavedPrompt[]>(KEY.saved, []));
     setMoodboard(load<MoodboardItem[]>(KEY.moodboard, []));
+    setSavedStyles(load<SavedStyle[]>(KEY.styles, []));
+    setTargetModelState(
+      load<TargetModelId>(KEY.targetModel, DEFAULT_TARGET_MODEL),
+    );
     // Command-palette handoff: if the palette routed here with a subject,
     // apply it once and clear the key so subsequent visits stay pristine.
     try {
@@ -217,7 +276,23 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
     if (hydrated) localStorage.setItem(KEY.moodboard, JSON.stringify(moodboard));
   }, [moodboard, hydrated]);
 
+  // Persist styles + target model (workspace-wide).
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(KEY.styles, JSON.stringify(savedStyles));
+  }, [savedStyles, hydrated]);
+  useEffect(() => {
+    if (hydrated) localStorage.setItem(KEY.targetModel, JSON.stringify(targetModel));
+  }, [targetModel, hydrated]);
+
   const prompt = useMemo(() => assemblePrompt(direction), [direction]);
+  const targetPrompt = useMemo(
+    () =>
+      formatForModel(prompt, targetModel, {
+        aspect: direction.aspect,
+        quality: direction.quality,
+      }),
+    [prompt, targetModel, direction.aspect, direction.quality],
+  );
 
   // Active project (from workspace) is stamped on new concepts so the
   // Project Graph and Timeline surface them automatically.
@@ -226,6 +301,30 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     activeProjectRef.current = activeProjectId;
   }, [activeProjectId]);
+
+  // Load the creative brief for the currently active project (or the
+  // workspace default when no project is active). Reruns when the project
+  // changes so switching projects switches brief cleanly.
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.briefProject(activeProjectId)
+      : KEY.briefDefault;
+    setBrief(load<CreativeBrief>(key, emptyCreativeBrief));
+  }, [activeProjectId, hydrated]);
+
+  // Persist the brief to the correct slot.
+  useEffect(() => {
+    if (!hydrated) return;
+    const key = activeProjectId
+      ? KEY.briefProject(activeProjectId)
+      : KEY.briefDefault;
+    try {
+      localStorage.setItem(key, JSON.stringify(brief));
+    } catch {
+      // storage unavailable
+    }
+  }, [brief, activeProjectId, hydrated]);
 
   // ── Generation hook ───────────────────────────────────────────────────────
   const onResult = useCallback(
@@ -302,6 +401,94 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
   );
 
   const resetDirection = useCallback(() => setDirection(emptyDirection), []);
+
+  // ── Pass B.1 actions ──
+  const updateBrief = useCallback((patch: Partial<CreativeBrief>) => {
+    setBrief((b) => mergeBrief(b, patch));
+  }, []);
+  const resetBrief = useCallback(() => setBrief(emptyCreativeBrief), []);
+
+  const saveCurrentAsStyle = useCallback(
+    (
+      name: string,
+      opts?: { vibe?: string; suffix?: string; swatch?: string },
+    ): string | null => {
+      let newId: string | null = null;
+      setSavedStyles((prev) => {
+        const res = saveStyle(prev, {
+          name,
+          vibe: opts?.vibe,
+          suffix: opts?.suffix,
+          swatch: opts?.swatch,
+          overrides: {
+            style: direction.style,
+            mood: direction.mood,
+            lighting: direction.lighting,
+            composition: direction.composition,
+            colorGrade: direction.colorGrade,
+            camera: direction.camera,
+            lens: direction.lens,
+            aperture: direction.aperture,
+            material: direction.material,
+            texture: direction.texture,
+            render: direction.render,
+            quality: direction.quality,
+          },
+        });
+        newId = res.id;
+        return res.list;
+      });
+      return newId;
+    },
+    [direction],
+  );
+
+  const applyStyleFn = useCallback(
+    (id: string) => {
+      const all = withPresets(savedStyles);
+      const style = all.find((s) => s.id === id);
+      if (!style) return;
+      setDirection((d) => applyStyleTo(d, style));
+    },
+    [savedStyles],
+  );
+
+  const removeStyleFn = useCallback((id: string) => {
+    setSavedStyles((prev) => deleteStyle(prev, id));
+  }, []);
+
+  const setTargetModel = useCallback((id: TargetModelId) => {
+    setTargetModelState(id);
+  }, []);
+
+  const applyDirectorMove = useCallback(
+    (action: DirectorAction): DirectorResult => {
+      const res = applyDirectorAction(prompt, action);
+      // The director works on the assembled prompt. Rather than trying to
+      // decompose the added descriptors back into Direction fields (lossy),
+      // we surface them as an "appended notes" style suffix by feeding the
+      // added descriptors into the current subject's environment field.
+      // This keeps the Direction model source-of-truth while making the
+      // added descriptors visible in the composed prompt.
+      if (res.changed.length > 0) {
+        const append = res.changed.join(", ");
+        setDirection((d) => ({
+          ...d,
+          environment: d.environment
+            ? `${d.environment}, ${append}`
+            : append,
+        }));
+      }
+      setLastDirectorResult(res);
+      return res;
+    },
+    [prompt],
+  );
+
+  const clearDirectorResult = useCallback(
+    () => setLastDirectorResult(null),
+    [],
+  );
 
   const generate = useCallback(() => {
     directionSnapshotRef.current = direction;
@@ -511,6 +698,20 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       updateMoodboardNote,
       reorderMoodboard,
       isConceptOnMoodboard,
+      // Pass B.1
+      brief,
+      updateBrief,
+      resetBrief,
+      savedStyles,
+      saveCurrentAsStyle,
+      applyStyle: applyStyleFn,
+      removeStyle: removeStyleFn,
+      targetModel,
+      setTargetModel,
+      targetPrompt,
+      applyDirectorMove,
+      lastDirectorResult,
+      clearDirectorResult,
     }),
     [
       direction,
@@ -549,6 +750,20 @@ export function VisionProvider({ children }: { children: React.ReactNode }) {
       updateMoodboardNote,
       reorderMoodboard,
       isConceptOnMoodboard,
+      // Pass B.1 deps
+      brief,
+      updateBrief,
+      resetBrief,
+      savedStyles,
+      saveCurrentAsStyle,
+      applyStyleFn,
+      removeStyleFn,
+      targetModel,
+      setTargetModel,
+      targetPrompt,
+      applyDirectorMove,
+      lastDirectorResult,
+      clearDirectorResult,
     ],
   );
 
