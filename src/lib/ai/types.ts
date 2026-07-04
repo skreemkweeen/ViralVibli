@@ -1,0 +1,182 @@
+/**
+ * Unified AI layer contracts. The UI never imports a provider; it calls our
+ * own API routes, which resolve a provider from env config. Providers are
+ * interchangeable and addable without touching this interface or the UI.
+ */
+
+export type EnhanceGoal =
+  | "composition"
+  | "lighting"
+  | "camera"
+  | "materials"
+  | "rendering"
+  | "cinematic";
+
+export const allEnhanceGoals: EnhanceGoal[] = [
+  "composition",
+  "lighting",
+  "camera",
+  "materials",
+  "rendering",
+  "cinematic",
+];
+
+export type EnhanceInput = {
+  /** the composed brief to elaborate */
+  prompt: string;
+  /** the user's subject; must be preserved verbatim, never overwritten */
+  subject: string;
+  /** which dimensions to improve */
+  goals: EnhanceGoal[];
+};
+
+export type EnhanceResult = {
+  prompt: string;
+  provider: string;
+};
+
+export type ImageRequest = {
+  prompt: string;
+  /** "4:5", "16:9", ... */
+  aspect: string;
+  count: number;
+  seed?: number;
+  quality?: string;
+};
+
+export type GeneratedImage = {
+  /** present when a real provider returns a rendered asset */
+  url?: string;
+  /** stable seed; the local engine renders a designed concept from it */
+  seed: string;
+  width?: number;
+  height?: number;
+  provider: string;
+};
+
+export type ImageResult = {
+  images: GeneratedImage[];
+  provider: string;
+};
+
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+
+export type Job = {
+  id: string;
+  status: JobStatus;
+  /** 0..1 */
+  progress: number;
+  /** Provider-specific request; callers cast to their known type. */
+  request: unknown;
+  /** Provider-specific result; callers cast to their known type. */
+  result?: unknown;
+  error?: string;
+  attempts: number;
+  provider: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export interface TextProvider {
+  readonly id: string;
+  enhance(input: EnhanceInput, signal?: AbortSignal): Promise<EnhanceResult>;
+}
+
+export interface ImageProvider {
+  readonly id: string;
+  generate(req: ImageRequest, signal?: AbortSignal): Promise<ImageResult>;
+}
+
+// ─── Story types ──────────────────────────────────────────────────────────────
+
+export type StorySlide = {
+  slide: number;
+  copy: string;
+  visualSuggestion: string;
+  stickerRecommendation?: string;
+  cta?: string;
+  speakerNotes?: string;
+};
+
+export type StoryRequest = {
+  brief: string;
+  /** The creator's raw topic/subject, used for display in local-provider templates. */
+  subject?: string;
+  framework: string;
+  platform: string;
+  count: number;
+  voice?: string;
+  tone?: string;
+  hookStrength?: string;
+  visualDirection?: string;
+  ctaStyle?: string;
+  audience?: string;
+  goal?: string;
+};
+
+export type StoryResult = {
+  slides: StorySlide[];
+  provider: string;
+};
+
+export interface StoryProvider {
+  readonly id: string;
+  generate(req: StoryRequest, signal?: AbortSignal): Promise<StoryResult>;
+}
+
+// ─── Vault types ──────────────────────────────────────────────────────────────
+
+export type TransformOp =
+  | "improve"
+  | "expand"
+  | "condense"
+  | "rewrite"
+  | "make-casual"
+  | "make-professional"
+  | "make-creative"
+  | "variations";
+
+export type VaultTransformRequest = {
+  content: string;
+  operation: TransformOp;
+  platform?: string;
+  count?: number;
+};
+
+export type VaultTransformResult = {
+  content: string;
+  variations?: string[];
+  provider: string;
+};
+
+export interface VaultTransformProvider {
+  readonly id: string;
+  transform(req: VaultTransformRequest, signal?: AbortSignal): Promise<VaultTransformResult>;
+}
+
+/** Provider failure that should surface to retry logic. */
+export class ProviderError extends Error {
+  constructor(
+    message: string,
+    readonly provider: string,
+    readonly retryable = true,
+  ) {
+    super(message);
+    this.name = "ProviderError";
+  }
+}
+
+export function aspectToSize(aspect: string, base = 1024): {
+  width: number;
+  height: number;
+} {
+  const [w, h] = aspect.split(":").map(Number);
+  if (!w || !h) return { width: base, height: base };
+  if (w >= h) return { width: base, height: Math.round((base * h) / w) };
+  return { width: Math.round((base * w) / h), height: base };
+}

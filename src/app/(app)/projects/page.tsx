@@ -1,0 +1,10 @@
+import type { Metadata } from "next";
+import { ProjectsView } from "@/components/workspace/projects-view";
+
+export const metadata: Metadata = {
+  title: "Projects — ViralVibli",
+};
+
+export default function ProjectsPage() {
+  return <ProjectsView />;
+}
